@@ -409,11 +409,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: linear-gradient(45deg, var(--color-surface-muted) 25%, transparent 25%, transparent 75%, var(--color-surface-muted) 75%, var(--color-surface-muted)),
-    linear-gradient(45deg, var(--color-surface-muted) 25%, transparent 25%, transparent 75%, var(--color-surface-muted) 75%, var(--color-surface-muted));
-  background-size: 20px 20px;
-  background-position: 0 0, 10px 10px;
-  background-color: var(--color-surface);
 }
 
 .image-preview__placeholder {
@@ -912,25 +907,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-      45deg,
-      var(--color-surface-muted) 25%,
-      transparent 25%,
-      transparent 75%,
-      var(--color-surface-muted) 75%,
-      var(--color-surface-muted)
-    ),
-    linear-gradient(
-      45deg,
-      var(--color-surface-muted) 25%,
-      transparent 25%,
-      transparent 75%,
-      var(--color-surface-muted) 75%,
-      var(--color-surface-muted)
-    );
-  background-size: 20px 20px;
-  background-position: 0 0, 10px 10px;
-  background-color: var(--color-surface);
+  background: var(--color-surface);
 }
 
 .interactive-crop__image {

@@ -69,25 +69,25 @@
           </p>
         </div>
 
-        <div class="feature-card feature-card--disabled">
+        <NuxtLink to="/editor" class="feature-card">
           <div class="feature-card__icon">
             <i class="fa-solid fa-water" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">ウォーターマーク</h3>
           <p class="feature-card__description">
-            画像やテキストの透かしを追加（近日公開）
+            テキスト/画像の透かしを配置し透明度・位置を調整
           </p>
-        </div>
+        </NuxtLink>
 
-        <div class="feature-card feature-card--disabled">
+        <NuxtLink to="/organize" class="feature-card">
           <div class="feature-card__icon">
-            <i class="fa-solid fa-cloud" aria-hidden="true"></i>
+            <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>
           </div>
-          <h3 class="feature-card__title">クラウド連携</h3>
+          <h3 class="feature-card__title">整理・リネーム</h3>
           <p class="feature-card__description">
-            Google Drive、Dropboxと連携（近日公開）
+            パターン名付けとサムネイル生成で一括整理
           </p>
-        </div>
+        </NuxtLink>
       </div>
     </div>
 

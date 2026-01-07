@@ -24,6 +24,10 @@
             <i class="fa-solid fa-right-left app-header__nav-icon" aria-hidden="true"></i>
             形式変換
           </NuxtLink>
+          <NuxtLink to="/organize" class="app-header__nav-link">
+            <i class="fa-solid fa-folder-tree app-header__nav-icon" aria-hidden="true"></i>
+            整理/リネーム
+          </NuxtLink>
         </nav>
       </div>
     </header>
@@ -47,6 +51,10 @@
           <NuxtLink to="/convert" class="app-sidebar__link">
             <i class="fa-solid fa-right-left app-sidebar__icon" aria-hidden="true"></i>
             形式変換
+          </NuxtLink>
+          <NuxtLink to="/organize" class="app-sidebar__link">
+            <i class="fa-solid fa-folder-tree app-sidebar__icon" aria-hidden="true"></i>
+            整理/リネーム
           </NuxtLink>
         </div>
 

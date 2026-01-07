@@ -53,6 +53,7 @@
 
         <div class="batch-queue__item-info">
           <div class="batch-queue__item-name">{{ job.file.name }}</div>
+          <div v-if="job.outputName" class="batch-queue__item-output">→ {{ job.outputName }}</div>
           <div class="batch-queue__item-details">
             <span>{{ formatSize(job.originalSize) }}</span>
             <span v-if="job.outputSize"> → {{ formatSize(job.outputSize) }}</span>

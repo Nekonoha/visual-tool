@@ -361,6 +361,164 @@
                 </section>
               </template>
             </ToolPanel>
+
+            <!-- 透かしタブ -->
+            <ToolPanel v-if="activeTab === 'watermark'" title="透かし" :show-close="false">
+              <template #default>
+                <section class="panel-section">
+                  <div class="panel-section__content">
+                    <div class="tool-group">
+                      <label class="tool-label">種別</label>
+                      <div class="chip-row">
+                        <button
+                          v-for="type in ['none','text','image']"
+                          :key="type"
+                          type="button"
+                          :class="['chip', { 'chip--active': watermarkType === type }]"
+                          :disabled="!imageStore.hasImage"
+                          @click="setWatermarkType(type as 'none' | 'text' | 'image')"
+                        >
+                          {{ type === 'none' ? 'なし' : type === 'text' ? 'テキスト' : '画像' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="watermarkType === 'text'" class="tool-group">
+                      <label class="tool-label">テキスト</label>
+                      <input
+                        v-model="watermarkText"
+                        type="text"
+                        class="tool-input"
+                        :disabled="!imageStore.hasImage"
+                        @input="applyRealtimeOps"
+                      />
+                    </div>
+
+                    <div v-if="watermarkType === 'text'" class="tool-group">
+                      <label class="tool-label">フォントサイズ</label>
+                      <Slider
+                        v-model="watermarkFontSize"
+                        :min="8"
+                        :max="120"
+                        :step="1"
+                        unit="px"
+                        :disabled="!imageStore.hasImage"
+                        @update:modelValue="applyRealtimeOps"
+                      />
+                    </div>
+
+                    <div v-if="watermarkType === 'text'" class="tool-group">
+                      <label class="tool-label">色</label>
+                      <input
+                        v-model="watermarkColor"
+                        type="color"
+                        class="tool-input"
+                        :disabled="!imageStore.hasImage"
+                        @input="applyRealtimeOps"
+                      />
+                    </div>
+
+                    <div class="tool-group">
+                      <label class="tool-label">不透明度</label>
+                      <Slider
+                        v-model="watermarkOpacity"
+                        :min="0"
+                        :max="100"
+                        :step="1"
+                        unit="%"
+                        :disabled="!imageStore.hasImage"
+                        @update:modelValue="applyRealtimeOps"
+                      />
+                    </div>
+
+                    <div class="tool-group">
+                      <label class="tool-label">位置</label>
+                      <select
+                        v-model="watermarkPosition"
+                        class="tool-select"
+                        :disabled="!imageStore.hasImage"
+                        @change="applyRealtimeOps"
+                      >
+                        <option value="bottom-right">右下</option>
+                        <option value="bottom-left">左下</option>
+                        <option value="top-right">右上</option>
+                        <option value="top-left">左上</option>
+                        <option value="center">中央</option>
+                      </select>
+                    </div>
+
+                    <div class="tool-grid tool-grid--2">
+                      <label class="tool-label">
+                        オフセットX (px)
+                        <input
+                          v-model.number="watermarkOffsetX"
+                          type="number"
+                          class="tool-input"
+                          :disabled="!imageStore.hasImage"
+                          @input="applyRealtimeOps"
+                        />
+                      </label>
+                      <label class="tool-label">
+                        オフセットY (px)
+                        <input
+                          v-model.number="watermarkOffsetY"
+                          type="number"
+                          class="tool-input"
+                          :disabled="!imageStore.hasImage"
+                          @input="applyRealtimeOps"
+                        />
+                      </label>
+                    </div>
+
+                    <div v-if="watermarkType === 'image'" class="tool-group">
+                      <label class="tool-label">透かし画像</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="tool-input"
+                        :disabled="!imageStore.hasImage"
+                        @change="handleWatermarkImageSelect"
+                      />
+                      <p v-if="watermarkImageName" class="tool-hint">{{ watermarkImageName }} を使用中</p>
+                    </div>
+
+                    <div v-if="watermarkType === 'image'" class="tool-group">
+                      <label class="tool-label">スケール</label>
+                      <Slider
+                        v-model="watermarkScale"
+                        :min="5"
+                        :max="200"
+                        :step="1"
+                        unit="%"
+                        :disabled="!imageStore.hasImage || !watermarkImageDataURL"
+                        @update:modelValue="applyRealtimeOps"
+                      />
+                    </div>
+
+                    <div class="tool-button-group">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        full-width
+                        :disabled="!imageStore.hasImage"
+                        @click="handleWatermarkApply"
+                      >
+                        透かしを適用
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        full-width
+                        :disabled="!imageStore.hasImage"
+                        @click="handleWatermarkReset"
+                      >
+                        リセット
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+              </template>
+            </ToolPanel>
           </div>
         </div>
       </div>
@@ -409,6 +567,7 @@ const tabs = [
   { id: 'crop', label: 'クロップ' },
   { id: 'transform', label: '回転・反転' },
   { id: 'filters', label: '色・効果' },
+  { id: 'watermark', label: '透かし' },
 ];
 
 const activeTab = ref('resize');
@@ -445,6 +604,19 @@ const toneCurvePoints = ref<ToneCurvePoint[]>([
   { x: 1, y: 1 },
 ]);
 const showToneCurve = ref(false);
+
+// 透かし
+const watermarkType = ref<'none' | 'text' | 'image'>('none');
+const watermarkText = ref('Sample Watermark');
+const watermarkFontSize = ref(32);
+const watermarkColor = ref('#ffffff');
+const watermarkOpacity = ref(50);
+const watermarkPosition = ref<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'>('bottom-right');
+const watermarkOffsetX = ref(24);
+const watermarkOffsetY = ref(24);
+const watermarkScale = ref(30);
+const watermarkImageDataURL = ref<string | null>(null);
+const watermarkImageName = ref('');
 
 // ファイル選択
 const handleFileSelected = async (file: File) => {
@@ -601,6 +773,48 @@ const handleToneCurveApply = (points: ToneCurvePoint[]) => {
   showToneCurve.value = false;
 };
 
+const handleWatermarkImageSelect = async (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const dataURL = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read watermark image'));
+    reader.readAsDataURL(file);
+  });
+  watermarkImageDataURL.value = dataURL;
+  watermarkImageName.value = file.name;
+  watermarkType.value = 'image';
+  applyRealtimeOps();
+};
+
+const handleWatermarkReset = () => {
+  watermarkType.value = 'none';
+  watermarkText.value = 'Sample Watermark';
+  watermarkFontSize.value = 32;
+  watermarkColor.value = '#ffffff';
+  watermarkOpacity.value = 50;
+  watermarkPosition.value = 'bottom-right';
+  watermarkOffsetX.value = 24;
+  watermarkOffsetY.value = 24;
+  watermarkScale.value = 30;
+  watermarkImageDataURL.value = null;
+  watermarkImageName.value = '';
+  applyRealtimeOps();
+  imageStore.commitOpsHistory();
+};
+
+const handleWatermarkApply = () => {
+  applyRealtimeOps();
+  imageStore.commitOpsHistory();
+};
+
+const setWatermarkType = (type: 'none' | 'text' | 'image') => {
+  watermarkType.value = type;
+  applyRealtimeOps();
+};
+
 // 統合リアルタイムプレビュー
 const applyRealtimeOps = () => {
   if (!imageStore.hasImage) return;
@@ -616,6 +830,18 @@ const applyRealtimeOps = () => {
     crop: shouldApplyCrop ? { x: cropX.value, y: cropY.value, width: cropWidth.value, height: cropHeight.value } : null,
     resizeWidth: resizeWidth.value !== imageStore.imageInfo?.width ? resizeWidth.value : null,
     resizeHeight: resizeHeight.value !== imageStore.imageInfo?.height ? resizeHeight.value : null,
+    watermark: {
+      type: watermarkType.value,
+      text: watermarkText.value,
+      fontSize: watermarkFontSize.value,
+      color: watermarkColor.value,
+      opacity: watermarkOpacity.value / 100,
+      position: watermarkPosition.value,
+      offsetX: watermarkOffsetX.value,
+      offsetY: watermarkOffsetY.value,
+      imageDataURL: watermarkType.value === 'image' ? watermarkImageDataURL.value || '' : '',
+      scale: watermarkScale.value / 100,
+    },
   });
 };
 
@@ -658,6 +884,19 @@ const syncUIFromOps = () => {
     { x: 0.66, y: 0.66 },
     { x: 1, y: 1 },
   ];
+  if (current.watermark) {
+    watermarkType.value = current.watermark.type ?? 'none';
+    watermarkText.value = current.watermark.text ?? 'Sample Watermark';
+    watermarkFontSize.value = current.watermark.fontSize ?? 32;
+    watermarkColor.value = current.watermark.color ?? '#ffffff';
+    watermarkOpacity.value = Math.round((current.watermark.opacity ?? 0.5) * 100);
+    watermarkPosition.value = current.watermark.position ?? 'bottom-right';
+    watermarkOffsetX.value = current.watermark.offsetX ?? 24;
+    watermarkOffsetY.value = current.watermark.offsetY ?? 24;
+    watermarkScale.value = Math.round((current.watermark.scale ?? 0.3) * 100);
+    watermarkImageDataURL.value = current.watermark.imageDataURL || null;
+    watermarkImageName.value = current.watermark.imageDataURL ? 'watermark-image' : '';
+  }
 };
 
 const resetUIState = () => {
@@ -685,6 +924,17 @@ const resetUIState = () => {
     { x: 0.66, y: 0.66 },
     { x: 1, y: 1 },
   ];
+  watermarkType.value = 'none';
+  watermarkText.value = 'Sample Watermark';
+  watermarkFontSize.value = 32;
+  watermarkColor.value = '#ffffff';
+  watermarkOpacity.value = 50;
+  watermarkPosition.value = 'bottom-right';
+  watermarkOffsetX.value = 24;
+  watermarkOffsetY.value = 24;
+  watermarkScale.value = 30;
+  watermarkImageDataURL.value = null;
+  watermarkImageName.value = '';
 };
 
 const handleResetOps = async () => {
@@ -718,6 +968,17 @@ const handleClearImage = () => {
     { x: 0.66, y: 0.66 },
     { x: 1, y: 1 },
   ];
+  watermarkType.value = 'none';
+  watermarkText.value = 'Sample Watermark';
+  watermarkFontSize.value = 32;
+  watermarkColor.value = '#ffffff';
+  watermarkOpacity.value = 50;
+  watermarkPosition.value = 'bottom-right';
+  watermarkOffsetX.value = 24;
+  watermarkOffsetY.value = 24;
+  watermarkScale.value = 30;
+  watermarkImageDataURL.value = null;
+  watermarkImageName.value = '';
 };
 
 const handleUndo = async () => {
@@ -774,7 +1035,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 400px;
   gap: var(--space-24);
-  height: calc(100vh - 200px);
+  min-height: 720px;
 }
 
 .editor__preview-section {
@@ -784,6 +1045,16 @@ onMounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.editor__preview-section :deep(.image-preview) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor__preview-section :deep(.image-preview__container) {
+  flex: 1;
 }
 
 .editor__preview-header {

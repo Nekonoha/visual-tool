@@ -7,6 +7,44 @@ export class ImageProcessor {
   private originalImage: HTMLImageElement | null = null;
   private currentImage: ImageData | null = null;
   private lastRenderInfo: { width: number; height: number; aspectRatio: number } | null = null;
+  private watermarkCache: { src: string; image: HTMLImageElement } | null = null;
+
+  private trimTransparentEdges(): void {
+    const { width, height } = this.canvas;
+    if (width === 0 || height === 0) return;
+    const imgData = this.ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+    if (!data || data.length === 0) return;
+
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4 + 3; // alpha channel
+        const alpha = data[idx] ?? 0;
+        if (alpha > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return; // nothing non-transparent
+
+    const trimW = maxX - minX + 1;
+    const trimH = maxY - minY + 1;
+    if (trimW === width && trimH === height) return; // already tight
+
+    const trimmed = this.ctx.getImageData(minX, minY, trimW, trimH);
+    this.canvas.width = trimW;
+    this.canvas.height = trimH;
+    this.ctx.putImageData(trimmed, 0, 0);
+  }
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -299,6 +337,20 @@ export class ImageProcessor {
     return await this.canvasToBlob();
   }
 
+  private async loadWatermarkImage(src: string): Promise<HTMLImageElement> {
+    if (this.watermarkCache && this.watermarkCache.src === src) {
+      return this.watermarkCache.image;
+    }
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Failed to load watermark image'));
+      img.src = src;
+    });
+    this.watermarkCache = { src, image };
+    return image;
+  }
+
   /**
    * すべての操作をoriginalから適用（合成）
    */
@@ -318,6 +370,20 @@ export class ImageProcessor {
     toneCurvePoints?: Array<{ x: number; y: number }>;
     grayscale?: boolean;
     sepia?: boolean;
+    watermark?: {
+      type?: 'none' | 'text' | 'image';
+      text?: string;
+      fontSize?: number;
+      color?: string;
+      opacity?: number; // 0-1
+      position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom';
+      offsetX?: number;
+      offsetY?: number;
+      imageDataURL?: string;
+      scale?: number; // 0-1
+      anchorX?: number | null;
+      anchorY?: number | null;
+    };
   }): Promise<Blob> {
     if (!this.originalImage) throw new Error('No image loaded');
     const rot = ops.rotation ?? 0;
@@ -459,7 +525,87 @@ export class ImageProcessor {
       }
     }
 
-    this.lastRenderInfo = { width: finalW, height: finalH, aspectRatio: finalW / finalH };
+    const watermark = ops.watermark;
+    if (watermark && watermark.type && watermark.type !== 'none') {
+      const opacity = Math.min(1, Math.max(0, watermark.opacity ?? 0.5));
+      if (opacity > 0) {
+        const position = watermark.position ?? 'bottom-right';
+        const offsetX = watermark.offsetX ?? 24;
+        const offsetY = watermark.offsetY ?? 24;
+
+        const computePosition = (w: number, h: number, anchor?: { x: number | null; y: number | null }) => {
+          const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+          if (position === 'custom' && anchor?.x != null && anchor?.y != null) {
+            return {
+              x: clamp(anchor.x, 0, Math.max(0, finalW - w)),
+              y: clamp(anchor.y, 0, Math.max(0, finalH - h)),
+            };
+          }
+          switch (position) {
+            case 'top-left':
+              return { x: offsetX, y: offsetY };
+            case 'top-right':
+              return { x: finalW - w - offsetX, y: offsetY };
+            case 'bottom-left':
+              return { x: offsetX, y: finalH - h - offsetY };
+            case 'center':
+              return { x: (finalW - w) / 2, y: (finalH - h) / 2 };
+            case 'custom':
+              return { x: offsetX, y: offsetY };
+            case 'bottom-right':
+            default:
+              return { x: finalW - w - offsetX, y: finalH - h - offsetY };
+          }
+        };
+
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity;
+
+        if (watermark.type === 'text' && watermark.text) {
+          const fontSize = Math.max(8, watermark.fontSize ?? 32);
+          this.ctx.font = `${fontSize}px 'Segoe UI', 'Helvetica Neue', Arial, sans-serif`;
+          this.ctx.fillStyle = watermark.color || 'rgba(255,255,255,0.8)';
+          this.ctx.shadowColor = 'rgba(0,0,0,0.35)';
+          this.ctx.shadowBlur = 6;
+          this.ctx.shadowOffsetX = 1;
+          this.ctx.shadowOffsetY = 1;
+          this.ctx.textBaseline = 'top';
+          const metrics = this.ctx.measureText(watermark.text);
+          const textWidth = metrics.width;
+          const textHeight = (metrics.actualBoundingBoxAscent ?? fontSize) + (metrics.actualBoundingBoxDescent ?? 0);
+          const { x, y } = computePosition(textWidth, textHeight, {
+            x: watermark.anchorX ?? null,
+            y: watermark.anchorY ?? null,
+          });
+          this.ctx.fillText(watermark.text, x, y);
+        } else if (watermark.type === 'image' && watermark.imageDataURL) {
+          try {
+            const img = await this.loadWatermarkImage(watermark.imageDataURL);
+            const scale = Math.min(2, Math.max(0.05, watermark.scale ?? 0.3));
+            const drawW = img.width * scale;
+            const drawH = img.height * scale;
+            const { x, y } = computePosition(drawW, drawH, {
+              x: watermark.anchorX ?? null,
+              y: watermark.anchorY ?? null,
+            });
+            this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
+            this.ctx.shadowBlur = 4;
+            this.ctx.shadowOffsetX = 1;
+            this.ctx.shadowOffsetY = 1;
+            this.ctx.drawImage(img, x, y, drawW, drawH);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        this.ctx.restore();
+      }
+    }
+
+    // Remove any transparent padding introduced by rotations or other ops
+    this.trimTransparentEdges();
+
+    this.lastRenderInfo = { width: this.canvas.width, height: this.canvas.height, aspectRatio: this.canvas.width / this.canvas.height };
     return await this.canvasToBlob();
   }
 

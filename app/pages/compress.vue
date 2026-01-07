@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue';
 import { useBatchStore } from '~/stores/batch';
 import BatchQueue from '~/components/BatchQueue.vue';
 import Button from '~/components/Button.vue';
@@ -112,6 +113,10 @@ definePageMeta({
 });
 
 const batchStore = useBatchStore();
+
+onMounted(() => {
+  batchStore.settings.operation = 'compress';
+});
 
 const handleProcess = async () => {
   await batchStore.processQueue();

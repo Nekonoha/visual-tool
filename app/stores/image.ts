@@ -47,6 +47,20 @@ export const useImageStore = defineStore('image', () => {
     ] as Array<{ x: number; y: number }>,
     grayscale: false,
     sepia: false,
+    watermark: {
+      type: 'none' as 'none' | 'text' | 'image',
+      text: 'Sample Watermark',
+      fontSize: 32,
+      color: '#ffffff',
+      opacity: 0.5,
+      position: 'bottom-right' as 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom',
+      offsetX: 24,
+      offsetY: 24,
+      imageDataURL: '',
+      scale: 0.3,
+      anchorX: null as number | null,
+      anchorY: null as number | null,
+    },
   });
 
   const ops = ref(defaultOps());
@@ -300,6 +314,7 @@ export const useImageStore = defineStore('image', () => {
     crop?: { x: number; y: number; width: number; height: number } | null;
     resizeWidth?: number | null;
     resizeHeight?: number | null;
+    watermark?: typeof ops.value.watermark;
   }) => {
     if (!processor.value) {
       error.value = 'No image loaded';
@@ -319,6 +334,7 @@ export const useImageStore = defineStore('image', () => {
     if (opts.crop !== undefined) ops.value.crop = opts.crop;
     if (opts.resizeWidth !== undefined) ops.value.resizeWidth = opts.resizeWidth;
     if (opts.resizeHeight !== undefined) ops.value.resizeHeight = opts.resizeHeight;
+    if (opts.watermark !== undefined) ops.value.watermark = opts.watermark;
     scheduleRender();
   };
 
