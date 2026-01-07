@@ -13,12 +13,15 @@
 
         <nav class="app-header__nav">
           <NuxtLink to="/editor" class="app-header__nav-link">
+            <i class="fa-solid fa-wand-magic-sparkles app-header__nav-icon" aria-hidden="true"></i>
             画像編集
           </NuxtLink>
           <NuxtLink to="/compress" class="app-header__nav-link">
+            <i class="fa-solid fa-compress app-header__nav-icon" aria-hidden="true"></i>
             バッチ圧縮
           </NuxtLink>
           <NuxtLink to="/convert" class="app-header__nav-link">
+            <i class="fa-solid fa-right-left app-header__nav-icon" aria-hidden="true"></i>
             形式変換
           </NuxtLink>
         </nav>
@@ -30,10 +33,7 @@
         <div class="app-sidebar__section">
           <h3 class="app-sidebar__section-title">編集機能</h3>
           <NuxtLink to="/editor" class="app-sidebar__link">
-            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
+            <i class="fa-solid fa-wand-magic-sparkles app-sidebar__icon" aria-hidden="true"></i>
             画像編集
           </NuxtLink>
         </div>
@@ -41,21 +41,11 @@
         <div class="app-sidebar__section">
           <h3 class="app-sidebar__section-title">バッチ処理</h3>
           <NuxtLink to="/compress" class="app-sidebar__link">
-            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="16 16 12 12 8 16"></polyline>
-              <line x1="12" y1="12" x2="12" y2="21"></line>
-              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
-            </svg>
+            <i class="fa-solid fa-compress app-sidebar__icon" aria-hidden="true"></i>
             バッチ圧縮
           </NuxtLink>
           <NuxtLink to="/convert" class="app-sidebar__link">
-            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="16 3 21 3 21 8"></polyline>
-              <line x1="4" y1="20" x2="21" y2="3"></line>
-              <polyline points="21 16 21 21 16 21"></polyline>
-              <line x1="15" y1="15" x2="21" y2="21"></line>
-              <line x1="4" y1="4" x2="9" y2="9"></line>
-            </svg>
+            <i class="fa-solid fa-right-left app-sidebar__icon" aria-hidden="true"></i>
             形式変換
           </NuxtLink>
         </div>
@@ -63,17 +53,11 @@
         <div class="app-sidebar__section">
           <h3 class="app-sidebar__section-title">高度な機能</h3>
           <div class="app-sidebar__link app-sidebar__link--disabled">
-            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
-              <line x1="18" y1="9" x2="12" y2="15"></line>
-              <line x1="12" y1="9" x2="18" y2="15"></line>
-            </svg>
+            <i class="fa-solid fa-eraser app-sidebar__icon" aria-hidden="true"></i>
             背景削除（近日）
           </div>
           <div class="app-sidebar__link app-sidebar__link--disabled">
-            <svg class="app-sidebar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-            </svg>
+            <i class="fa-solid fa-water app-sidebar__icon" aria-hidden="true"></i>
             ウォーターマーク（近日）
           </div>
         </div>
@@ -90,9 +74,9 @@
           © 2026 Visual Tool - 画像編集ツール
         </p>
         <div class="app-footer__links">
-          <a href="#" class="app-footer__link">プライバシーポリシー</a>
-          <a href="#" class="app-footer__link">利用規約</a>
-          <a href="https://github.com" target="_blank" class="app-footer__link">GitHub</a>
+          <NuxtLink to="/privacy" class="app-footer__link">プライバシーポリシー</NuxtLink>
+          <NuxtLink to="/terms" class="app-footer__link">利用規約</NuxtLink>
+          <a href="https://github.com/nekonoha/visual-tool" target="_blank" class="app-footer__link" rel="noopener noreferrer">GitHub</a>
         </div>
       </div>
     </footer>
@@ -169,6 +153,9 @@
   font-weight: 500;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast) ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .app-header__nav-link:hover {
@@ -179,6 +166,10 @@
 .app-header__nav-link.router-link-active {
   color: var(--color-primary);
   background: rgba(0, 122, 255, 0.1);
+}
+
+.app-header__nav-icon {
+  font-size: 16px;
 }
 
 /* Sidebar */
@@ -241,8 +232,11 @@
 .app-sidebar__icon {
   width: 20px;
   height: 20px;
-  stroke-width: 2;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
 }
 
 /* Sidebar disabled state */

@@ -398,7 +398,11 @@ definePageMeta({
   layout: 'default',
 });
 
-const imageStore = useImageStore();
+const isServer = typeof window === 'undefined';
+// SSRガード: サーバーレンダリング時はスタブを返してクラッシュを防ぐ
+const imageStore = isServer
+  ? ({ hasImage: false, imageInfo: null } as unknown as ReturnType<typeof useImageStore>)
+  : useImageStore();
 
 const tabs = [
   { id: 'resize', label: 'リサイズ' },

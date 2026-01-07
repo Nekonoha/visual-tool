@@ -7,7 +7,11 @@ export default defineNuxtConfig({
   ssr: false,
   
   // CSS
-  css: ['~/styles/globals.css', '~/styles/components.css'],
+  css: [
+    '@fortawesome/fontawesome-free/css/all.min.css',
+    '~/styles/globals.css',
+    '~/styles/components.css',
+  ],
   
   // Modules
   modules: ['@pinia/nuxt'],

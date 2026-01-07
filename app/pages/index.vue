@@ -31,10 +31,7 @@
       <div class="features__grid">
         <NuxtLink to="/editor" class="feature-card">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">画像編集</h3>
           <p class="feature-card__description">
@@ -44,11 +41,7 @@
 
         <NuxtLink to="/compress" class="feature-card">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="16 16 12 12 8 16"></polyline>
-              <line x1="12" y1="12" x2="12" y2="21"></line>
-              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path>
-            </svg>
+            <i class="fa-solid fa-compress" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">バッチ圧縮</h3>
           <p class="feature-card__description">
@@ -58,11 +51,7 @@
 
         <NuxtLink to="/convert" class="feature-card">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="16 3 21 3 21 8"></polyline>
-              <line x1="4" y1="20" x2="21" y2="3"></line>
-              <polyline points="21 16 21 21 16 21"></polyline>
-            </svg>
+            <i class="fa-solid fa-right-left" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">形式変換</h3>
           <p class="feature-card__description">
@@ -72,11 +61,7 @@
 
         <div class="feature-card feature-card--disabled">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
-              <line x1="18" y1="9" x2="12" y2="15"></line>
-              <line x1="12" y1="9" x2="18" y2="15"></line>
-            </svg>
+            <i class="fa-solid fa-eraser" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">背景削除</h3>
           <p class="feature-card__description">
@@ -86,9 +71,7 @@
 
         <div class="feature-card feature-card--disabled">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-            </svg>
+            <i class="fa-solid fa-water" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">ウォーターマーク</h3>
           <p class="feature-card__description">
@@ -98,9 +81,7 @@
 
         <div class="feature-card feature-card--disabled">
           <div class="feature-card__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-            </svg>
+            <i class="fa-solid fa-cloud" aria-hidden="true"></i>
           </div>
           <h3 class="feature-card__title">クラウド連携</h3>
           <p class="feature-card__description">
@@ -272,13 +253,15 @@ definePageMeta({
 .feature-card__icon {
   width: 48px;
   height: 48px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   color: var(--color-primary);
 }
 
-.feature-card__icon svg {
-  width: 100%;
-  height: 100%;
-  stroke-width: 2;
+.feature-card__icon i {
+  font-size: 22px;
 }
 
 .feature-card__title {
