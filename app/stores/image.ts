@@ -59,6 +59,18 @@ export const useImageStore = defineStore('image', () => {
     ] as Array<{ x: number; y: number }>,
     grayscale: false,
     sepia: false,
+    // Advanced filters
+    posterize: null as { levels: number } | null,
+    levels: null as { inputBlack: number; inputWhite: number; outputBlack: number; outputWhite: number; gamma: number } | null,
+    colorBalance: null as {
+      shadows: { cyan: number; magenta: number; yellow: number };
+      midtones: { cyan: number; magenta: number; yellow: number };
+      highlights: { cyan: number; magenta: number; yellow: number };
+    } | null,
+    threshold: null as { threshold: number } | null,
+    sharpen: null as { amount: number; radius: number } | null,
+    sketch: null as { intensity: number; invert: boolean } | null,
+    chromaticAberration: null as { offsetX: number; offsetY: number } | null,
     watermark: {
       type: 'none' as 'none' | 'text' | 'image',
       text: 'Sample Watermark',
@@ -129,13 +141,21 @@ export const useImageStore = defineStore('image', () => {
           result.flipV = op.params.flipV;
           break;
         case 'filters':
-          result.brightness = op.params.brightness ?? 100;
-          result.contrast = op.params.contrast ?? 100;
-          result.saturation = op.params.saturation ?? 100;
-          result.blur = op.params.blur ?? 0;
-          result.hue = op.params.hue ?? 0;
-          result.gamma = op.params.gamma ?? 1;
+          result.brightness = op.params.brightness ?? result.brightness;
+          result.contrast = op.params.contrast ?? result.contrast;
+          result.saturation = op.params.saturation ?? result.saturation;
+          result.blur = op.params.blur ?? result.blur;
+          result.hue = op.params.hue ?? result.hue;
+          result.gamma = op.params.gamma ?? result.gamma;
           result.toneCurvePoints = op.params.toneCurvePoints ?? result.toneCurvePoints;
+          // 新しいフィルター
+          result.posterize = op.params.posterize ?? result.posterize;
+          result.levels = op.params.levels ?? result.levels;
+          result.colorBalance = op.params.colorBalance ?? result.colorBalance;
+          result.threshold = op.params.threshold ?? result.threshold;
+          result.sharpen = op.params.sharpen ?? result.sharpen;
+          result.sketch = op.params.sketch ?? result.sketch;
+          result.chromaticAberration = op.params.chromaticAberration ?? result.chromaticAberration;
           break;
         case 'watermark':
           result.watermark = op.params.watermark;

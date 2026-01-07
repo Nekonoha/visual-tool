@@ -24,6 +24,13 @@
         @open-grayscale="handleGrayscale"
         @open-sepia="handleSepia"
         @open-watermark="showWatermarkModal = true"
+        @open-posterize="showPosterizeModal = true"
+        @open-levels="showLevelsModal = true"
+        @open-color-balance="showColorBalanceModal = true"
+        @open-threshold="showThresholdModal = true"
+        @open-sharpen="showSharpenModal = true"
+        @open-sketch="showSketchModal = true"
+        @open-chromatic-aberration="showChromaticAberrationModal = true"
       />
 
       <div class="editor__container">
@@ -117,6 +124,69 @@
       @apply="handleWatermarkApply"
       @cancel="handleModalCancel"
     />
+
+    <!-- 諧調化モーダル -->
+    <PosterizeModal
+      v-model:visible="showPosterizeModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handlePosterizePreview"
+      @apply="handlePosterizeApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- レベル補正モーダル -->
+    <LevelsModal
+      v-model:visible="showLevelsModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleLevelsPreview"
+      @apply="handleLevelsApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- カラーバランスモーダル -->
+    <ColorBalanceModal
+      v-model:visible="showColorBalanceModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleColorBalancePreview"
+      @apply="handleColorBalanceApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- 2値化モーダル -->
+    <ThresholdModal
+      v-model:visible="showThresholdModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleThresholdPreview"
+      @apply="handleThresholdApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- シャープモーダル -->
+    <SharpenModal
+      v-model:visible="showSharpenModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleSharpenPreview"
+      @apply="handleSharpenApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- えんぴつ調モーダル -->
+    <SketchModal
+      v-model:visible="showSketchModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleSketchPreview"
+      @apply="handleSketchApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- 色収差モーダル -->
+    <ChromaticAberrationModal
+      v-model:visible="showChromaticAberrationModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleChromaticAberrationPreview"
+      @apply="handleChromaticAberrationApply"
+      @cancel="handleModalCancel"
+    />
   </div>
 </template>
 
@@ -132,6 +202,13 @@ import BrightnessContrastModal from '~/components/modals/BrightnessContrastModal
 import HueSaturationModal from '~/components/modals/HueSaturationModal.vue';
 import ToneCurveModal from '~/components/modals/ToneCurveModal.vue';
 import WatermarkModal from '~/components/modals/WatermarkModal.vue';
+import PosterizeModal from '~/components/modals/PosterizeModal.vue';
+import LevelsModal from '~/components/modals/LevelsModal.vue';
+import ColorBalanceModal from '~/components/modals/ColorBalanceModal.vue';
+import ThresholdModal from '~/components/modals/ThresholdModal.vue';
+import SharpenModal from '~/components/modals/SharpenModal.vue';
+import SketchModal from '~/components/modals/SketchModal.vue';
+import ChromaticAberrationModal from '~/components/modals/ChromaticAberrationModal.vue';
 import { useImageStore } from '~/stores/image';
 import { useEditorModals } from '~/composables/useEditorModals';
 import { useKeyboardShortcuts } from '~/composables/useKeyboardShortcuts';
@@ -155,6 +232,13 @@ const {
   showHueSaturationModal,
   showToneCurveModal,
   showWatermarkModal,
+  showPosterizeModal,
+  showLevelsModal,
+  showColorBalanceModal,
+  showThresholdModal,
+  showSharpenModal,
+  showSketchModal,
+  showChromaticAberrationModal,
   modalPreviewSrc,
   toneCurvePoints,
   isAnyModalOpen,
@@ -402,6 +486,149 @@ const handleWatermarkApply = async (params: WatermarkParams) => {
     },
   });
   showWatermarkModal.value = false;
+};
+
+// === 高度なフィルターハンドラー ===
+
+// 諧調化
+const handlePosterizePreview = async (levels: number) => {
+  imageStore.ops.posterize = { levels };
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handlePosterizeApply = async (levels: number) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { posterize: { levels } },
+  });
+  imageStore.ops.posterize = null;
+  showPosterizeModal.value = false;
+};
+
+// レベル補正
+interface LevelsParams {
+  inputBlack: number;
+  inputWhite: number;
+  outputBlack: number;
+  outputWhite: number;
+  gamma: number;
+}
+
+const handleLevelsPreview = async (params: LevelsParams) => {
+  imageStore.ops.levels = params;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleLevelsApply = async (params: LevelsParams) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { levels: params },
+  });
+  imageStore.ops.levels = null;
+  showLevelsModal.value = false;
+};
+
+// カラーバランス
+interface ColorBalanceParams {
+  shadows: { cyan: number; magenta: number; yellow: number };
+  midtones: { cyan: number; magenta: number; yellow: number };
+  highlights: { cyan: number; magenta: number; yellow: number };
+}
+
+const handleColorBalancePreview = async (params: ColorBalanceParams) => {
+  imageStore.ops.colorBalance = params;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleColorBalanceApply = async (params: ColorBalanceParams) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { colorBalance: params },
+  });
+  imageStore.ops.colorBalance = null;
+  showColorBalanceModal.value = false;
+};
+
+// 2値化
+const handleThresholdPreview = async (threshold: number) => {
+  imageStore.ops.threshold = { threshold };
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleThresholdApply = async (threshold: number) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { threshold: { threshold } },
+  });
+  imageStore.ops.threshold = null;
+  showThresholdModal.value = false;
+};
+
+// シャープ
+interface SharpenParams {
+  amount: number;
+  radius: number;
+}
+
+const handleSharpenPreview = async (params: SharpenParams) => {
+  imageStore.ops.sharpen = params;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleSharpenApply = async (params: SharpenParams) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { sharpen: params },
+  });
+  imageStore.ops.sharpen = null;
+  showSharpenModal.value = false;
+};
+
+// えんぴつ調
+interface SketchParams {
+  intensity: number;
+  invert: boolean;
+}
+
+const handleSketchPreview = async (params: SketchParams) => {
+  imageStore.ops.sketch = params;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleSketchApply = async (params: SketchParams) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { sketch: params },
+  });
+  imageStore.ops.sketch = null;
+  showSketchModal.value = false;
+};
+
+// 色収差
+interface ChromaticAberrationParams {
+  offsetX: number;
+  offsetY: number;
+}
+
+const handleChromaticAberrationPreview = async (params: ChromaticAberrationParams) => {
+  imageStore.ops.chromaticAberration = params;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleChromaticAberrationApply = async (params: ChromaticAberrationParams) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: { chromaticAberration: params },
+  });
+  imageStore.ops.chromaticAberration = null;
+  showChromaticAberrationModal.value = false;
 };
 
 // グレースケール・セピア

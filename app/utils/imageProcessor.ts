@@ -351,6 +351,217 @@ export class ImageProcessor {
     return image;
   }
 
+  // ========================================
+  // Advanced Filters - Pixel Manipulation
+  // ========================================
+
+  /**
+   * ポスタライズ（諧調化）- 色の階調数を減らす
+   */
+  private applyPosterize(data: Uint8ClampedArray, levels: number): void {
+    const step = 255 / (levels - 1);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.round(Math.round((data[i] ?? 0) / step) * step);
+      data[i + 1] = Math.round(Math.round((data[i + 1] ?? 0) / step) * step);
+      data[i + 2] = Math.round(Math.round((data[i + 2] ?? 0) / step) * step);
+    }
+  }
+
+  /**
+   * レベル補正
+   */
+  private applyLevels(
+    data: Uint8ClampedArray,
+    inputBlack: number,
+    inputWhite: number,
+    outputBlack: number,
+    outputWhite: number,
+    gamma: number
+  ): void {
+    const lut = new Array(256);
+    const inputRange = Math.max(1, inputWhite - inputBlack);
+    const outputRange = outputWhite - outputBlack;
+    const inverseGamma = 1 / gamma;
+
+    for (let i = 0; i < 256; i++) {
+      // 入力範囲にクランプ
+      let val = (i - inputBlack) / inputRange;
+      val = Math.max(0, Math.min(1, val));
+      // ガンマ補正
+      val = Math.pow(val, inverseGamma);
+      // 出力範囲にマップ
+      lut[i] = Math.round(outputBlack + val * outputRange);
+    }
+
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = lut[data[i] ?? 0] ?? 0;
+      data[i + 1] = lut[data[i + 1] ?? 0] ?? 0;
+      data[i + 2] = lut[data[i + 2] ?? 0] ?? 0;
+    }
+  }
+
+  /**
+   * カラーバランス
+   */
+  private applyColorBalance(
+    data: Uint8ClampedArray,
+    shadows: { cyan: number; magenta: number; yellow: number },
+    midtones: { cyan: number; magenta: number; yellow: number },
+    highlights: { cyan: number; magenta: number; yellow: number }
+  ): void {
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i] ?? 0;
+      let g = data[i + 1] ?? 0;
+      let b = data[i + 2] ?? 0;
+      const luminance = (r + g + b) / 3 / 255;
+
+      // シャドウ、ミッドトーン、ハイライトの重み
+      const shadowWeight = 1 - Math.min(1, luminance * 2);
+      const highlightWeight = Math.max(0, (luminance - 0.5) * 2);
+      const midtoneWeight = 1 - Math.abs(luminance - 0.5) * 2;
+
+      // 各範囲の補正を適用
+      const adjustR = 
+        shadows.cyan * shadowWeight * -2.55 +
+        midtones.cyan * midtoneWeight * -2.55 +
+        highlights.cyan * highlightWeight * -2.55;
+      const adjustG =
+        shadows.magenta * shadowWeight * -2.55 +
+        midtones.magenta * midtoneWeight * -2.55 +
+        highlights.magenta * highlightWeight * -2.55;
+      const adjustB =
+        shadows.yellow * shadowWeight * -2.55 +
+        midtones.yellow * midtoneWeight * -2.55 +
+        highlights.yellow * highlightWeight * -2.55;
+
+      data[i] = Math.max(0, Math.min(255, r + adjustR));
+      data[i + 1] = Math.max(0, Math.min(255, g + adjustG));
+      data[i + 2] = Math.max(0, Math.min(255, b + adjustB));
+    }
+  }
+
+  /**
+   * 2値化（しきい値）
+   */
+  private applyThreshold(data: Uint8ClampedArray, threshold: number): void {
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * (data[i] ?? 0) + 0.587 * (data[i + 1] ?? 0) + 0.114 * (data[i + 2] ?? 0);
+      const val = gray >= threshold ? 255 : 0;
+      data[i] = val;
+      data[i + 1] = val;
+      data[i + 2] = val;
+    }
+  }
+
+  /**
+   * シャープ（アンシャープマスク）
+   */
+  private applySharpen(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    amount: number,
+    radius: number
+  ): void {
+    // 元の画像を保存
+    const originalData = ctx.getImageData(0, 0, width, height);
+    const original = new Uint8ClampedArray(originalData.data);
+
+    // ぼかした画像を作成
+    ctx.filter = `blur(${radius}px)`;
+    ctx.drawImage(ctx.canvas, 0, 0);
+    ctx.filter = 'none';
+    const blurredData = ctx.getImageData(0, 0, width, height);
+    const blurred = blurredData.data;
+
+    // アンシャープマスク: original + amount * (original - blurred)
+    const factor = amount / 100;
+    for (let i = 0; i < original.length; i += 4) {
+      for (let c = 0; c < 3; c++) {
+        const origVal = original[i + c] ?? 0;
+        const blurVal = blurred[i + c] ?? 0;
+        const diff = origVal - blurVal;
+        const newVal = origVal + diff * factor;
+        blurred[i + c] = Math.max(0, Math.min(255, Math.round(newVal)));
+      }
+      blurred[i + 3] = original[i + 3] ?? 255; // アルファを保持
+    }
+
+    ctx.putImageData(blurredData, 0, 0);
+  }
+
+  /**
+   * えんぴつ調（エッジ検出＋グレースケール）
+   */
+  private applySketch(data: Uint8ClampedArray, width: number, height: number, intensity: number, invert: boolean): void {
+    const gray = new Uint8Array(width * height);
+    
+    // グレースケール化
+    for (let i = 0; i < data.length; i += 4) {
+      gray[i / 4] = Math.round(0.299 * (data[i] ?? 0) + 0.587 * (data[i + 1] ?? 0) + 0.114 * (data[i + 2] ?? 0));
+    }
+
+    // Sobelエッジ検出
+    const sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+    const sobelY = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        let gx = 0, gy = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const idx = (y + ky) * width + (x + kx);
+            const kernelIdx = (ky + 1) * 3 + (kx + 1);
+            gx += (gray[idx] ?? 0) * (sobelX[kernelIdx] ?? 0);
+            gy += (gray[idx] ?? 0) * (sobelY[kernelIdx] ?? 0);
+          }
+        }
+        let edge = Math.sqrt(gx * gx + gy * gy);
+        edge = Math.min(255, edge * (intensity / 50));
+        
+        const pixelIdx = (y * width + x) * 4;
+        const val = invert ? 255 - edge : edge;
+        data[pixelIdx] = val;
+        data[pixelIdx + 1] = val;
+        data[pixelIdx + 2] = val;
+      }
+    }
+  }
+
+  /**
+   * 色収差（RGBチャンネルをずらす）
+   */
+  private applyChromaticAberration(
+    data: Uint8ClampedArray,
+    width: number,
+    height: number,
+    offsetX: number,
+    offsetY: number
+  ): void {
+    const original = new Uint8ClampedArray(data);
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+
+        // Rチャンネル: オフセット方向にずらす
+        const rxSrc = Math.max(0, Math.min(width - 1, x - offsetX));
+        const rySrc = Math.max(0, Math.min(height - 1, y - offsetY));
+        const rIdx = (rySrc * width + rxSrc) * 4;
+        data[idx] = original[rIdx] ?? 0;
+
+        // Gチャンネル: そのまま
+        data[idx + 1] = original[idx + 1] ?? 0;
+
+        // Bチャンネル: 逆方向にずらす
+        const bxSrc = Math.max(0, Math.min(width - 1, x + offsetX));
+        const bySrc = Math.max(0, Math.min(height - 1, y + offsetY));
+        const bIdx = (bySrc * width + bxSrc) * 4;
+        data[idx + 2] = original[bIdx + 2] ?? 0;
+      }
+    }
+  }
+
   /**
    * すべての操作をoriginalから適用（合成）
    */
@@ -370,6 +581,18 @@ export class ImageProcessor {
     toneCurvePoints?: Array<{ x: number; y: number }>;
     grayscale?: boolean;
     sepia?: boolean;
+    // Advanced filters
+    posterize?: { levels: number } | null;
+    levels?: { inputBlack: number; inputWhite: number; outputBlack: number; outputWhite: number; gamma: number } | null;
+    colorBalance?: {
+      shadows: { cyan: number; magenta: number; yellow: number };
+      midtones: { cyan: number; magenta: number; yellow: number };
+      highlights: { cyan: number; magenta: number; yellow: number };
+    } | null;
+    threshold?: { threshold: number } | null;
+    sharpen?: { amount: number; radius: number } | null;
+    sketch?: { intensity: number; invert: boolean } | null;
+    chromaticAberration?: { offsetX: number; offsetY: number } | null;
     watermark?: {
       type?: 'none' | 'text' | 'image';
       text?: string;
@@ -528,6 +751,56 @@ export class ImageProcessor {
           this.ctx.putImageData(imgData, 0, 0);
         }
       }
+    }
+
+    // === Advanced Filters ===
+
+    // レベル補正
+    if (ops.levels) {
+      const { inputBlack, inputWhite, outputBlack, outputWhite, gamma } = ops.levels;
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applyLevels(imgData.data, inputBlack, inputWhite, outputBlack, outputWhite, gamma);
+      this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // カラーバランス
+    if (ops.colorBalance) {
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applyColorBalance(imgData.data, ops.colorBalance.shadows, ops.colorBalance.midtones, ops.colorBalance.highlights);
+      this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // ポスタライズ（諧調化）
+    if (ops.posterize && ops.posterize.levels > 1) {
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applyPosterize(imgData.data, ops.posterize.levels);
+      this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 2値化
+    if (ops.threshold) {
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applyThreshold(imgData.data, ops.threshold.threshold);
+      this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // シャープ
+    if (ops.sharpen && ops.sharpen.amount > 0) {
+      this.applySharpen(this.ctx, finalW, finalH, ops.sharpen.amount, ops.sharpen.radius);
+    }
+
+    // えんぴつ調
+    if (ops.sketch) {
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applySketch(imgData.data, finalW, finalH, ops.sketch.intensity, ops.sketch.invert);
+      this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 色収差
+    if (ops.chromaticAberration && (ops.chromaticAberration.offsetX !== 0 || ops.chromaticAberration.offsetY !== 0)) {
+      const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
+      this.applyChromaticAberration(imgData.data, finalW, finalH, ops.chromaticAberration.offsetX, ops.chromaticAberration.offsetY);
+      this.ctx.putImageData(imgData, 0, 0);
     }
 
     const watermark = ops.watermark;

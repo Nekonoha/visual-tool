@@ -92,9 +92,9 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="リサイズ"
-    width="650px"
-    min-width="500px"
-    min-height="350px"
+    width="620px"
+    min-width="580px"
+    min-height="420px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -102,7 +102,7 @@ const handleReset = () => {
     @cancel="handleCancel"
     @reset="handleReset"
   >
-    <div class="resize-modal-content">
+    <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
           <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
@@ -110,58 +110,61 @@ const handleReset = () => {
         </div>
       </div>
       
-      <div class="modal-controls-section modal-controls-section--narrow">
-        <div class="control-group">
-          <label class="control-label">幅</label>
-          <div class="input-with-unit">
-            <input
-              type="number"
-              :value="width"
-              min="1"
-              max="10000"
-              @input="handleWidthChange(Number(($event.target as HTMLInputElement).value))"
-              class="number-input"
-            />
-            <span class="unit">px</span>
+      <div class="modal-controls-section">
+        <div class="control-section">
+          <h4 class="section-title">サイズ</h4>
+          <div class="control-group">
+            <label class="control-label">幅</label>
+            <div class="input-with-unit">
+              <input
+                type="number"
+                :value="width"
+                min="1"
+                max="10000"
+                @input="handleWidthChange(Number(($event.target as HTMLInputElement).value))"
+                class="number-input"
+              />
+              <span class="unit">px</span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label">高さ</label>
+            <div class="input-with-unit">
+              <input
+                type="number"
+                :value="height"
+                min="1"
+                max="10000"
+                @input="handleHeightChange(Number(($event.target as HTMLInputElement).value))"
+                class="number-input"
+              />
+              <span class="unit">px</span>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="lockAspect" />
+              縦横比を維持
+            </label>
           </div>
         </div>
         
-        <div class="control-group">
-          <label class="control-label">高さ</label>
-          <div class="input-with-unit">
-            <input
-              type="number"
-              :value="height"
-              min="1"
-              max="10000"
-              @input="handleHeightChange(Number(($event.target as HTMLInputElement).value))"
-              class="number-input"
+        <div class="control-section">
+          <h4 class="section-title">スケール</h4>
+          <div class="control-group">
+            <label class="control-label">拡大縮小: {{ scalePercent }}%</label>
+            <Slider
+              :model-value="scalePercent"
+              :min="1"
+              :max="400"
+              :step="1"
+              @update:model-value="handleScaleChange"
             />
-            <span class="unit">px</span>
           </div>
-        </div>
-        
-        <div class="control-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="lockAspect" />
-            縦横比を維持
-          </label>
-        </div>
-        
-        <div class="control-group">
-          <label class="control-label">拡大縮小 (%)</label>
-          <Slider
-            :model-value="scalePercent"
-            :min="1"
-            :max="400"
-            :step="1"
-            @update:model-value="handleScaleChange"
-          />
-        </div>
-        
-        <div class="info-text">
-          元のサイズ: {{ currentWidth }} × {{ currentHeight }} px<br />
-          新しいサイズ: {{ width }} × {{ height }} px
+          <div class="info-text">
+            元のサイズ: {{ currentWidth }} × {{ currentHeight }} px<br />
+            新しいサイズ: {{ width }} × {{ height }} px
+          </div>
         </div>
       </div>
     </div>

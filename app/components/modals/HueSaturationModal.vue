@@ -66,9 +66,9 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="色相・彩度・明度"
-    width="600px"
-    min-width="450px"
-    min-height="320px"
+    width="620px"
+    min-width="580px"
+    min-height="380px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -76,7 +76,7 @@ const handleReset = () => {
     @cancel="handleCancel"
     @reset="handleReset"
   >
-    <div class="hsv-modal-content">
+    <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
           <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
@@ -84,38 +84,39 @@ const handleReset = () => {
         </div>
       </div>
       
-      <div class="modal-controls-section modal-controls-section--narrow">
-        <div class="control-group">
-          <label class="control-label">色相 ({{ hue }}°)</label>
-          <Slider
-            :model-value="hue"
-            :min="-180"
-            :max="180"
-            :step="1"
-            @update:model-value="handleHueChange"
-          />
-        </div>
-        
-        <div class="control-group">
-          <label class="control-label">彩度 ({{ saturation }})</label>
-          <Slider
-            :model-value="saturation"
-            :min="0"
-            :max="200"
-            :step="1"
-            @update:model-value="handleSaturationChange"
-          />
-        </div>
-        
-        <div class="control-group">
-          <label class="control-label">明度 / ガンマ ({{ gamma }})</label>
-          <Slider
-            :model-value="gamma"
-            :min="10"
-            :max="300"
-            :step="1"
-            @update:model-value="handleGammaChange"
-          />
+      <div class="modal-controls-section">
+        <div class="control-section">
+          <h4 class="section-title">設定</h4>
+          <div class="control-group">
+            <label class="control-label">色相: {{ hue }}°</label>
+            <Slider
+              :model-value="hue"
+              :min="-180"
+              :max="180"
+              :step="1"
+              @update:model-value="handleHueChange"
+            />
+          </div>
+          <div class="control-group">
+            <label class="control-label">彩度: {{ saturation }}</label>
+            <Slider
+              :model-value="saturation"
+              :min="0"
+              :max="200"
+              :step="1"
+              @update:model-value="handleSaturationChange"
+            />
+          </div>
+          <div class="control-group">
+            <label class="control-label">明度 / ガンマ: {{ gamma }}</label>
+            <Slider
+              :model-value="gamma"
+              :min="10"
+              :max="300"
+              :step="1"
+              @update:model-value="handleGammaChange"
+            />
+          </div>
         </div>
       </div>
     </div>

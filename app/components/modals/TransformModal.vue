@@ -71,9 +71,9 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="回転・反転"
-    width="650px"
-    min-width="500px"
-    min-height="350px"
+    width="620px"
+    min-width="580px"
+    min-height="400px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -81,7 +81,7 @@ const handleReset = () => {
     @cancel="handleCancel"
     @reset="handleReset"
   >
-    <div class="transform-modal-content">
+    <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
           <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
@@ -90,46 +90,50 @@ const handleReset = () => {
       </div>
       
       <div class="modal-controls-section">
-        <div class="control-group">
-          <label class="control-label">回転 ({{ rotation }}°)</label>
-          <Slider
-            :model-value="rotation"
-            :min="-180"
-            :max="180"
-            :step="1"
-            @update:model-value="handleRotationChange"
-          />
-        </div>
-        
-        <div class="control-group">
-          <label class="control-label">90°回転</label>
-          <div class="button-row">
-            <button class="action-btn" @click="handleRotate90(-1)">
-              ↺ 左90°
-            </button>
-            <button class="action-btn" @click="handleRotate90(1)">
-              ↻ 右90°
-            </button>
+        <div class="control-section">
+          <h4 class="section-title">回転</h4>
+          <div class="control-group">
+            <label class="control-label">角度: {{ rotation }}°</label>
+            <Slider
+              :model-value="rotation"
+              :min="-180"
+              :max="180"
+              :step="1"
+              @update:model-value="handleRotationChange"
+            />
+          </div>
+          <div class="control-group">
+            <label class="control-label">90°回転</label>
+            <div class="button-row">
+              <button class="action-btn" @click="handleRotate90(-1)">
+                ↺ 左90°
+              </button>
+              <button class="action-btn" @click="handleRotate90(1)">
+                ↻ 右90°
+              </button>
+            </div>
           </div>
         </div>
         
-        <div class="control-group">
-          <label class="control-label">反転</label>
-          <div class="button-row">
-            <button
-              class="action-btn"
-              :class="{ active: flipH }"
-              @click="handleFlipH"
-            >
-              ↔ 水平反転
-            </button>
-            <button
-              class="action-btn"
-              :class="{ active: flipV }"
-              @click="handleFlipV"
-            >
-              ↕ 垂直反転
-            </button>
+        <div class="control-section">
+          <h4 class="section-title">反転</h4>
+          <div class="control-group">
+            <div class="button-row">
+              <button
+                class="action-btn"
+                :class="{ active: flipH }"
+                @click="handleFlipH"
+              >
+                ↔ 水平反転
+              </button>
+              <button
+                class="action-btn"
+                :class="{ active: flipV }"
+                @click="handleFlipV"
+              >
+                ↕ 垂直反転
+              </button>
+            </div>
           </div>
         </div>
       </div>

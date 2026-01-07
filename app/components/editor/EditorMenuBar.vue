@@ -19,6 +19,14 @@ const emit = defineEmits<{
   (e: 'open-grayscale'): void;
   (e: 'open-sepia'): void;
   (e: 'open-watermark'): void;
+  // New advanced filters
+  (e: 'open-posterize'): void;
+  (e: 'open-levels'): void;
+  (e: 'open-color-balance'): void;
+  (e: 'open-threshold'): void;
+  (e: 'open-sharpen'): void;
+  (e: 'open-sketch'): void;
+  (e: 'open-chromatic-aberration'): void;
 }>();
 
 interface MenuItem {
@@ -41,6 +49,8 @@ const menus = computed<Menu[]>(() => [
       { label: 'やり直し (Ctrl+Y)', action: () => emit('redo'), disabled: !props.canRedo },
       { divider: true, label: '' },
       { label: 'すべてリセット', action: () => emit('reset'), disabled: !props.hasImage },
+      { divider: true, label: '' },
+      { label: '画像を保存...', action: () => emit('download'), disabled: !props.hasImage },
     ],
   },
   {
@@ -61,19 +71,31 @@ const menus = computed<Menu[]>(() => [
     items: [
       { label: '明るさ・コントラスト...', action: () => emit('open-brightness-contrast'), disabled: !props.hasImage },
       { label: '色相・彩度・明度...', action: () => emit('open-hue-saturation'), disabled: !props.hasImage },
+      { label: 'カラーバランス...', action: () => emit('open-color-balance'), disabled: !props.hasImage },
       { divider: true, label: '' },
+      { label: 'レベル補正...', action: () => emit('open-levels'), disabled: !props.hasImage },
       { label: 'トーンカーブ...', action: () => emit('open-tone-curve'), disabled: !props.hasImage },
+      { divider: true, label: '' },
+      { label: '諧調化...', action: () => emit('open-posterize'), disabled: !props.hasImage },
+      { label: '2値化...', action: () => emit('open-threshold'), disabled: !props.hasImage },
       { divider: true, label: '' },
       { label: 'グレースケール', action: () => emit('open-grayscale'), disabled: !props.hasImage },
       { label: 'セピア', action: () => emit('open-sepia'), disabled: !props.hasImage },
     ],
   },
   {
+    label: 'フィルター',
+    items: [
+      { label: 'シャープ...', action: () => emit('open-sharpen'), disabled: !props.hasImage },
+      { divider: true, label: '' },
+      { label: 'えんぴつ調...', action: () => emit('open-sketch'), disabled: !props.hasImage },
+      { label: '色収差...', action: () => emit('open-chromatic-aberration'), disabled: !props.hasImage },
+    ],
+  },
+  {
     label: 'その他',
     items: [
       { label: 'ウォーターマーク...', action: () => emit('open-watermark'), disabled: !props.hasImage },
-      { divider: true, label: '' },
-      { label: '画像を保存...', action: () => emit('download'), disabled: !props.hasImage },
     ],
   },
 ]);

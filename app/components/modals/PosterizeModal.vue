@@ -9,37 +9,26 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
-  (e: 'preview', brightness: number, contrast: number): void;
-  (e: 'apply', brightness: number, contrast: number): void;
+  (e: 'preview', levels: number): void;
+  (e: 'apply', levels: number): void;
   (e: 'cancel'): void;
 }>();
 
-const brightness = ref(100);
-const contrast = ref(100);
+const levels = ref(8);
 
 watch(() => props.visible, (visible) => {
   if (visible) {
-    brightness.value = 100;
-    contrast.value = 100;
+    levels.value = 8;
   }
 });
 
-const handleBrightnessChange = (val: number) => {
-  brightness.value = val;
-  emitPreview();
-};
-
-const handleContrastChange = (val: number) => {
-  contrast.value = val;
-  emitPreview();
-};
-
-const emitPreview = () => {
-  emit('preview', brightness.value, contrast.value);
+const handleLevelsChange = (val: number) => {
+  levels.value = val;
+  emit('preview', levels.value);
 };
 
 const handleApply = () => {
-  emit('apply', brightness.value, contrast.value);
+  emit('apply', levels.value);
   emit('update:visible', false);
 };
 
@@ -48,19 +37,18 @@ const handleCancel = () => {
 };
 
 const handleReset = () => {
-  brightness.value = 100;
-  contrast.value = 100;
-  emitPreview();
+  levels.value = 8;
+  emit('preview', levels.value);
 };
 </script>
 
 <template>
   <OperationModal
     :visible="visible"
-    title="明るさ・コントラスト"
+    title="諧調化（ポスタライズ）"
     width="620px"
     min-width="580px"
-    min-height="380px"
+    min-height="360px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -80,25 +68,16 @@ const handleReset = () => {
         <div class="control-section">
           <h4 class="section-title">設定</h4>
           <div class="control-group">
-            <label class="control-label">明るさ: {{ brightness }}</label>
+            <label class="control-label">階調数: {{ levels }}</label>
             <Slider
-              :model-value="brightness"
-              :min="0"
-              :max="200"
+              :model-value="levels"
+              :min="2"
+              :max="32"
               :step="1"
-              @update:model-value="handleBrightnessChange"
+              @update:model-value="handleLevelsChange"
             />
           </div>
-          <div class="control-group">
-            <label class="control-label">コントラスト: {{ contrast }}</label>
-            <Slider
-              :model-value="contrast"
-              :min="0"
-              :max="200"
-              :step="1"
-              @update:model-value="handleContrastChange"
-            />
-          </div>
+          <p class="control-hint">値を小さくするとポスター調になります</p>
         </div>
       </div>
     </div>

@@ -85,6 +85,54 @@ export interface FilterParams {
   toneCurvePoints?: ToneCurvePoint[];
 }
 
+// ========================================
+// Advanced Filter Types
+// ========================================
+
+/** ポスタライズ（諧調化）パラメータ */
+export interface PosterizeParams {
+  levels: number; // 2-256
+}
+
+/** レベル補正パラメータ */
+export interface LevelsParams {
+  inputBlack: number;  // 0-255
+  inputWhite: number;  // 0-255
+  outputBlack: number; // 0-255
+  outputWhite: number; // 0-255
+  gamma: number;       // 0.1-10
+}
+
+/** カラーバランスパラメータ */
+export interface ColorBalanceParams {
+  shadows: { cyan: number; magenta: number; yellow: number };    // -100 to 100
+  midtones: { cyan: number; magenta: number; yellow: number };   // -100 to 100
+  highlights: { cyan: number; magenta: number; yellow: number }; // -100 to 100
+}
+
+/** 2値化パラメータ */
+export interface ThresholdParams {
+  threshold: number; // 0-255
+}
+
+/** シャープパラメータ */
+export interface SharpenParams {
+  amount: number;  // 0-500 (%)
+  radius: number;  // 0.1-10 (px)
+}
+
+/** えんぴつ調（スケッチ）パラメータ */
+export interface SketchParams {
+  intensity: number; // 0-100
+  invert: boolean;   // 白背景黒線 or 黒背景白線
+}
+
+/** 色収差パラメータ */
+export interface ChromaticAberrationParams {
+  offsetX: number; // -50 to 50 (px)
+  offsetY: number; // -50 to 50 (px)
+}
+
 export interface TransformParams {
   rotation: number;
   flipH: boolean;

@@ -21,9 +21,9 @@ const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
 
-const width = 280;
-const height = 200;
-const padding = 16;
+const width = 220;
+const height = 160;
+const padding = 12;
 
 // pointsは常にx座標でソート済みで保持（モーダル内ローカル状態）
 const points = ref<Point[]>([...props.modelValue].sort((a, b) => a.x - b.x));
@@ -237,9 +237,9 @@ const handleCancel = () => {
   <OperationModal
     :visible="visible"
     title="トーンカーブ"
-    width="650px"
-    min-width="500px"
-    min-height="350px"
+    width="620px"
+    min-width="580px"
+    min-height="380px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -247,7 +247,7 @@ const handleCancel = () => {
     @cancel="handleCancel"
     @reset="handleReset"
   >
-    <div class="tonecurve-content">
+    <div class="modal-content">
       <!-- プレビューエリア -->
       <div class="modal-preview-section">
         <div class="modal-preview-container">
@@ -257,25 +257,31 @@ const handleCancel = () => {
       </div>
       
       <!-- カーブエディタ -->
-      <div class="curve-section">
-        <div class="curve" ref="svgRef">
-          <svg :width="width" :height="height" @pointerdown="onSvgPointerDown">
-            <rect :width="width" :height="height" class="curve__bg" />
-            <path class="curve__line" :d="curvePath" />
-            <circle
-              v-for="(p, idx) in pointsPx"
-              :key="idx"
-              class="curve__handle"
-              :cx="p.x"
-              :cy="p.y"
-              :data-idx="idx"
-              r="8"
-              @pointerdown.stop="onHandlePointerDown($event, idx)"
-              @contextmenu.stop.prevent="onHandleRightClick(idx)"
-            />
-          </svg>
+      <div class="modal-controls-section tonecurve-controls">
+        <div class="control-section">
+          <div class="section-title">カーブ編集</div>
+          <div class="curve" ref="svgRef">
+            <svg :width="width" :height="height" @pointerdown="onSvgPointerDown">
+              <rect :width="width" :height="height" class="curve__bg" />
+              <path class="curve__line" :d="curvePath" />
+              <circle
+                v-for="(p, idx) in pointsPx"
+                :key="idx"
+                class="curve__handle"
+                :cx="p.x"
+                :cy="p.y"
+                :data-idx="idx"
+                r="8"
+                @pointerdown.stop="onHandlePointerDown($event, idx)"
+                @contextmenu.stop.prevent="onHandleRightClick(idx)"
+              />
+            </svg>
+          </div>
+          <p class="control-hint">クリックで点追加、右クリックで削除</p>
         </div>
-        <div class="curve__toolbar">
+        
+        <div class="control-section">
+          <div class="section-title">プリセット</div>
           <div class="curve__presets">
             <Button variant="outline" size="sm" @click="applyPreset('linear')">リニア</Button>
             <Button variant="outline" size="sm" @click="applyPreset('contrast')">コントラスト+</Button>
@@ -283,7 +289,6 @@ const handleCancel = () => {
             <Button variant="outline" size="sm" @click="applyPreset('inverse')">反転</Button>
             <Button variant="outline" size="sm" @click="applyPreset('matte')">マット</Button>
           </div>
-          <p class="curve__hint">クリックで点追加、右クリックで削除</p>
         </div>
       </div>
     </div>

@@ -15,6 +15,14 @@ export function useEditorModals() {
   const showHueSaturationModal = ref(false);
   const showToneCurveModal = ref(false);
   const showWatermarkModal = ref(false);
+  // Advanced filters
+  const showPosterizeModal = ref(false);
+  const showLevelsModal = ref(false);
+  const showColorBalanceModal = ref(false);
+  const showThresholdModal = ref(false);
+  const showSharpenModal = ref(false);
+  const showSketchModal = ref(false);
+  const showChromaticAberrationModal = ref(false);
   
   // モーダルプレビュー用
   const modalPreviewSrc = ref<string | null>(null);
@@ -39,7 +47,14 @@ export function useEditorModals() {
     showBrightnessContrastModal.value ||
     showHueSaturationModal.value ||
     showToneCurveModal.value ||
-    showWatermarkModal.value
+    showWatermarkModal.value ||
+    showPosterizeModal.value ||
+    showLevelsModal.value ||
+    showColorBalanceModal.value ||
+    showThresholdModal.value ||
+    showSharpenModal.value ||
+    showSketchModal.value ||
+    showChromaticAberrationModal.value
   );
   
   // 全モーダルを閉じる
@@ -51,6 +66,13 @@ export function useEditorModals() {
     showHueSaturationModal.value = false;
     showToneCurveModal.value = false;
     showWatermarkModal.value = false;
+    showPosterizeModal.value = false;
+    showLevelsModal.value = false;
+    showColorBalanceModal.value = false;
+    showThresholdModal.value = false;
+    showSharpenModal.value = false;
+    showSketchModal.value = false;
+    showChromaticAberrationModal.value = false;
   };
   
   // モーダル開く際の初期化
@@ -70,6 +92,13 @@ export function useEditorModals() {
         showWatermarkModal,
         showToneCurveModal,
         showCropModal,
+        showPosterizeModal,
+        showLevelsModal,
+        showColorBalanceModal,
+        showThresholdModal,
+        showSharpenModal,
+        showSketchModal,
+        showChromaticAberrationModal,
       ],
       (newVals) => {
         const anyOpen = newVals.some(v => v);
@@ -89,6 +118,13 @@ export function useEditorModals() {
     showHueSaturationModal,
     showToneCurveModal,
     showWatermarkModal,
+    showPosterizeModal,
+    showLevelsModal,
+    showColorBalanceModal,
+    showThresholdModal,
+    showSharpenModal,
+    showSketchModal,
+    showChromaticAberrationModal,
     
     // プレビュー
     modalPreviewSrc,

@@ -13,15 +13,21 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: var(--z-modal);
+  pointer-events: none;
+}
+
+.operation-modal-overlay > * {
+  pointer-events: auto;
 }
 
 .operation-modal {
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   display: flex;
@@ -190,16 +196,20 @@
    Shared Modal Content Layout
    ========================================================================== */
 
-.modal-content-layout {
+.modal-content {
   display: flex;
-  gap: var(--space-24);
+  gap: var(--space-20);
+  height: 100%;
+  min-height: 300px;
 }
 
 .modal-preview-section {
   flex: 1;
-  min-width: 200px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
 }
 
 .modal-preview-container {
@@ -209,7 +219,8 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-height: 200px;
+  min-height: 250px;
+  max-height: 450px;
   overflow: hidden;
 }
 
@@ -227,16 +238,31 @@
 .modal-controls-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-12);
   flex-shrink: 0;
-}
-
-.modal-controls-section--narrow {
-  width: 200px;
-}
-
-.modal-controls-section--wide {
   width: 240px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: var(--space-8);
+}
+
+/* Scrollbar styling for controls section */
+.modal-controls-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-controls-section::-webkit-scrollbar-track {
+  background: var(--color-surface-muted);
+  border-radius: 3px;
+}
+
+.modal-controls-section::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.modal-controls-section::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 /* Control Group */
@@ -256,22 +282,40 @@
   color: var(--color-text-secondary);
 }
 
+.control-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin: var(--space-4) 0 0 0;
+  line-height: 1.5;
+}
+
+/* Control Section Box */
+.control-section {
+  padding: var(--space-12);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.control-section + .control-section {
+  margin-top: var(--space-8);
+}
+
 /* ==========================================================================
    Tone Curve Modal
    ========================================================================== */
 
-.tonecurve-content {
-  display: flex;
-  gap: var(--space-20);
-  min-height: 0;
-  flex: 1;
+.tonecurve-controls {
+  width: 260px;
 }
 
-.curve-section {
+.tonecurve-controls .curve {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-  flex-shrink: 0;
+  justify-content: center;
+}
+
+.tonecurve-controls .curve svg {
+  max-width: 100%;
 }
 
 .curve {
@@ -301,50 +345,20 @@
   cursor: grabbing;
 }
 
-.curve__toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
 .curve__presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
 }
 
-.curve__hint {
+.curve__presets .btn {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  margin: 0;
+  padding: var(--space-4) var(--space-8);
 }
 
 /* ==========================================================================
-   Watermark Modal
+   Watermark Modal Specific Styles
    ========================================================================== */
-
-.watermark-modal-content {
-  display: flex;
-  gap: var(--space-24);
-}
-
-.watermark-modal-content .modal-preview-section {
-  min-width: 300px;
-}
-
-.watermark-modal-content .modal-preview-container {
-  min-height: 300px;
-}
-
-.watermark-modal-content .modal-preview-image {
-  max-height: 400px;
-}
-
-.watermark-modal-content .modal-controls-section {
-  width: 240px;
-  max-height: 450px;
-  overflow-y: auto;
-}
 
 .type-buttons {
   display: flex;
@@ -417,30 +431,8 @@
 }
 
 /* ==========================================================================
-   Transform Modal
+   Transform & Resize Modal Specific Styles
    ========================================================================== */
-
-.transform-modal-content {
-  display: flex;
-  gap: var(--space-24);
-}
-
-.transform-modal-content .modal-preview-section {
-  min-width: 250px;
-}
-
-.transform-modal-content .modal-preview-container {
-  min-height: 250px;
-}
-
-.transform-modal-content .modal-preview-image {
-  max-height: 350px;
-}
-
-.transform-modal-content .modal-controls-section {
-  width: 220px;
-  gap: var(--space-20);
-}
 
 .button-row {
   display: flex;
@@ -467,31 +459,6 @@
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
-}
-
-/* ==========================================================================
-   Resize Modal
-   ========================================================================== */
-
-.resize-modal-content {
-  display: flex;
-  gap: var(--space-24);
-}
-
-.resize-modal-content .modal-preview-section {
-  min-width: 200px;
-}
-
-.resize-modal-content .modal-preview-container {
-  min-height: 200px;
-}
-
-.resize-modal-content .modal-preview-image {
-  max-height: 300px;
-}
-
-.resize-modal-content .modal-controls-section {
-  width: 200px;
 }
 
 .input-with-unit {
@@ -539,37 +506,6 @@
   line-height: 1.6;
   padding-top: var(--space-8);
   border-top: 1px solid var(--color-border);
-}
-
-/* ==========================================================================
-   Brightness/Contrast & Hue/Saturation Modals
-   ========================================================================== */
-
-.bc-modal-content,
-.hsv-modal-content {
-  display: flex;
-  gap: var(--space-24);
-}
-
-.bc-modal-content .modal-preview-section,
-.hsv-modal-content .modal-preview-section {
-  min-width: 250px;
-}
-
-.bc-modal-content .modal-preview-container,
-.hsv-modal-content .modal-preview-container {
-  min-height: 250px;
-}
-
-.bc-modal-content .modal-preview-image,
-.hsv-modal-content .modal-preview-image {
-  max-height: 350px;
-}
-
-.bc-modal-content .modal-controls-section,
-.hsv-modal-content .modal-controls-section {
-  width: 200px;
-  gap: var(--space-20);
 }
 
 /* ==========================================================================
@@ -628,4 +564,33 @@
 /* Reuse number-input from resize modal */
 .crop-modal-content .number-input {
   width: 100%;
+}
+
+/* ==========================================================================
+   Section titles (for grouped controls)
+   ========================================================================== */
+
+.section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-12) 0;
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+/* Checkbox label */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
 }

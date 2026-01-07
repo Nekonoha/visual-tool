@@ -2,6 +2,11 @@
 import OperationModal from '~/components/modals/OperationModal.vue';
 import Slider from '~/components/ui/Slider.vue';
 
+interface ChromaticAberrationParams {
+  offsetX: number;
+  offsetY: number;
+}
+
 const props = defineProps<{
   visible: boolean;
   previewSrc: string | null;
@@ -9,37 +14,32 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
-  (e: 'preview', brightness: number, contrast: number): void;
-  (e: 'apply', brightness: number, contrast: number): void;
+  (e: 'preview', params: ChromaticAberrationParams): void;
+  (e: 'apply', params: ChromaticAberrationParams): void;
   (e: 'cancel'): void;
 }>();
 
-const brightness = ref(100);
-const contrast = ref(100);
+const offsetX = ref(3);
+const offsetY = ref(0);
+
+const getParams = (): ChromaticAberrationParams => ({
+  offsetX: offsetX.value,
+  offsetY: offsetY.value,
+});
 
 watch(() => props.visible, (visible) => {
   if (visible) {
-    brightness.value = 100;
-    contrast.value = 100;
+    offsetX.value = 3;
+    offsetY.value = 0;
   }
 });
 
-const handleBrightnessChange = (val: number) => {
-  brightness.value = val;
-  emitPreview();
-};
-
-const handleContrastChange = (val: number) => {
-  contrast.value = val;
-  emitPreview();
-};
-
 const emitPreview = () => {
-  emit('preview', brightness.value, contrast.value);
+  emit('preview', getParams());
 };
 
 const handleApply = () => {
-  emit('apply', brightness.value, contrast.value);
+  emit('apply', getParams());
   emit('update:visible', false);
 };
 
@@ -48,8 +48,8 @@ const handleCancel = () => {
 };
 
 const handleReset = () => {
-  brightness.value = 100;
-  contrast.value = 100;
+  offsetX.value = 3;
+  offsetY.value = 0;
   emitPreview();
 };
 </script>
@@ -57,7 +57,7 @@ const handleReset = () => {
 <template>
   <OperationModal
     :visible="visible"
-    title="明るさ・コントラスト"
+    title="色収差"
     width="620px"
     min-width="580px"
     min-height="380px"
@@ -80,25 +80,26 @@ const handleReset = () => {
         <div class="control-section">
           <h4 class="section-title">設定</h4>
           <div class="control-group">
-            <label class="control-label">明るさ: {{ brightness }}</label>
+            <label class="control-label">X方向オフセット: {{ offsetX }}px</label>
             <Slider
-              :model-value="brightness"
-              :min="0"
-              :max="200"
+              :model-value="offsetX"
+              :min="-30"
+              :max="30"
               :step="1"
-              @update:model-value="handleBrightnessChange"
+              @update:model-value="(v) => { offsetX = v; emitPreview(); }"
             />
           </div>
           <div class="control-group">
-            <label class="control-label">コントラスト: {{ contrast }}</label>
+            <label class="control-label">Y方向オフセット: {{ offsetY }}px</label>
             <Slider
-              :model-value="contrast"
-              :min="0"
-              :max="200"
+              :model-value="offsetY"
+              :min="-30"
+              :max="30"
               :step="1"
-              @update:model-value="handleContrastChange"
+              @update:model-value="(v) => { offsetY = v; emitPreview(); }"
             />
           </div>
+          <p class="control-hint">RGBチャンネルをずらしてレトロな色収差効果を作成します</p>
         </div>
       </div>
     </div>
