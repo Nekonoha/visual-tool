@@ -42,23 +42,65 @@
 
 ```
 app/
-├── components/          # 再利用可能なUIコンポーネント
-│   ├── Button.vue      # ボタンコンポーネント
-│   ├── Slider.vue      # スライダーコンポーネント
-│   ├── FileInput.vue   # ファイル入力コンポーネント
-│   ├── ImagePreview.vue # 画像プレビュー
-│   └── ToolPanel.vue   # ツールパネル
-├── pages/              # ページ
-│   └── index.vue       # メインエディタページ
-├── stores/             # Piniaストア（状態管理）
-│   └── image.ts        # 画像処理ストア
-├── utils/              # ユーティリティ関数
-│   └── imageProcessor.ts # 画像処理エンジン
-├── composables/        # 再利用可能なロジック
-├── styles/             # グローバルスタイル
-│   ├── theme.ts        # グローバルテーマシステム
-│   └── globals.css     # グローバルCSS
-└── app.vue            # ルートコンポーネント
+├── components/              # UIコンポーネント
+│   ├── ui/                  # 汎用UIコンポーネント
+│   │   ├── Button.vue       # ボタン
+│   │   ├── Slider.vue       # スライダー
+│   │   ├── FileInput.vue    # ファイル入力
+│   │   ├── ToolPanel.vue    # ツールパネル
+│   │   └── index.ts         # UIエクスポート
+│   ├── modals/              # モーダルダイアログ
+│   │   ├── OperationModal.vue    # 基底モーダル
+│   │   ├── ResizeModal.vue       # リサイズ
+│   │   ├── CropModal.vue         # 切り抜き
+│   │   ├── TransformModal.vue    # 変形
+│   │   ├── BrightnessContrastModal.vue
+│   │   ├── HueSaturationModal.vue
+│   │   ├── ToneCurveModal.vue
+│   │   ├── WatermarkModal.vue
+│   │   └── index.ts         # モーダルエクスポート
+│   ├── editor/              # エディター専用コンポーネント
+│   │   ├── EditorMenuBar.vue    # メニューバー
+│   │   ├── ImagePreview.vue     # 画像プレビュー
+│   │   ├── InteractiveCrop.vue  # インタラクティブ切り抜き
+│   │   ├── BatchQueue.vue       # バッチキュー
+│   │   └── index.ts         # エディターエクスポート
+│   └── index.ts             # 全コンポーネントエクスポート
+├── pages/                   # ページ
+│   ├── index.vue            # ホーム
+│   ├── editor.vue           # 画像エディター
+│   ├── convert.vue          # フォーマット変換
+│   ├── compress.vue         # 画像圧縮
+│   ├── organize.vue         # 画像整理
+│   ├── privacy.vue          # プライバシーポリシー
+│   └── terms.vue            # 利用規約
+├── stores/                  # Piniaストア（状態管理）
+│   ├── image.ts             # 画像処理ストア
+│   ├── batch.ts             # バッチ処理ストア
+│   └── index.ts             # ストアエクスポート
+├── utils/                   # ユーティリティ関数
+│   ├── imageProcessor.ts    # 画像処理エンジン
+│   ├── imageCompressor.ts   # 圧縮処理
+│   ├── advancedResampler.ts # 高度なリサンプリング
+│   └── index.ts             # ユーティリティエクスポート
+├── composables/             # Composition API フック
+│   ├── useEditorModals.ts   # モーダル管理
+│   ├── useKeyboardShortcuts.ts # キーボードショートカット
+│   └── index.ts             # composablesエクスポート
+├── types/                   # TypeScript型定義
+│   └── index.ts             # 全型定義
+├── styles/                  # スタイルシート
+│   ├── tokens.css           # デザイントークン（Apple HIG準拠）
+│   ├── base.css             # ベーススタイル
+│   ├── layout.css           # レイアウトスタイル
+│   ├── components.css       # コンポーネントスタイル
+│   ├── editor.css           # エディタースタイル
+│   ├── modals.css           # モーダルスタイル
+│   ├── pages.css            # ページスタイル
+│   └── main.css             # メインエントリー
+├── layouts/                 # レイアウト
+│   └── default.vue          # デフォルトレイアウト
+└── app.vue                  # ルートコンポーネント
 ```
 
 ## セットアップ
@@ -91,15 +133,24 @@ npm run preview
 
 ## デザインシステム
 
-グローバルテーマファイル（`app/styles/theme.ts`）で以下を一元管理：
-- カラーパレット
+デザイントークンファイル（`app/styles/tokens.css`）で以下をCSS変数として一元管理：
+- カラーパレット（Apple HIG準拠）
 - タイポグラフィ
 - スペーシング
 - ボーダー半径
 - シャドウ
 - アニメーション
 
-すべてのコンポーネントはこのテーマを参照し、一貫性のあるデザインを維持します。
+スタイルは機能別にCSSファイルに分離：
+- `tokens.css` - デザイントークン
+- `base.css` - リセットと基本スタイル
+- `layout.css` - アプリレイアウト
+- `components.css` - 汎用コンポーネント
+- `editor.css` - エディター関連
+- `modals.css` - モーダルダイアログ
+- `pages.css` - ページ固有スタイル
+
+すべてのコンポーネントはCSS変数を参照し、一貫性のあるデザインを維持します。
 
 ## コンポーネント原則
 

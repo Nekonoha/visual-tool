@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OperationModal from './OperationModal.vue';
-import Slider from './Slider.vue';
+import OperationModal from '~/components/modals/OperationModal.vue';
+import Slider from '~/components/ui/Slider.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -82,14 +82,14 @@ const handleReset = () => {
     @reset="handleReset"
   >
     <div class="transform-modal-content">
-      <div class="preview-section">
-        <div class="preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="preview-image" />
-          <div v-else class="preview-placeholder">プレビュー</div>
+      <div class="modal-preview-section">
+        <div class="modal-preview-container">
+          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>
       
-      <div class="controls-section">
+      <div class="modal-controls-section">
         <div class="control-group">
           <label class="control-label">回転 ({{ rotation }}°)</label>
           <Slider
@@ -136,81 +136,3 @@ const handleReset = () => {
     </div>
   </OperationModal>
 </template>
-
-<style scoped>
-.transform-modal-content {
-  display: flex;
-  gap: 24px;
-}
-
-.preview-section {
-  flex: 1;
-  min-width: 250px;
-}
-
-.preview-container {
-  background: var(--checkerboard-bg);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 250px;
-  overflow: hidden;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 350px;
-  object-fit: contain;
-}
-
-.preview-placeholder {
-  color: var(--color-text-muted);
-  font-size: 14px;
-}
-
-.controls-section {
-  width: 220px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.control-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.button-row {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.action-btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.action-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-</style>

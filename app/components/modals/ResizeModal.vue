@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OperationModal from './OperationModal.vue';
-import Slider from './Slider.vue';
+import OperationModal from '~/components/modals/OperationModal.vue';
+import Slider from '~/components/ui/Slider.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -103,14 +103,14 @@ const handleReset = () => {
     @reset="handleReset"
   >
     <div class="resize-modal-content">
-      <div class="preview-section">
-        <div class="preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="preview-image" />
-          <div v-else class="preview-placeholder">プレビュー</div>
+      <div class="modal-preview-section">
+        <div class="modal-preview-container">
+          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>
       
-      <div class="controls-section">
+      <div class="modal-controls-section modal-controls-section--narrow">
         <div class="control-group">
           <label class="control-label">幅</label>
           <div class="input-with-unit">
@@ -167,101 +167,3 @@ const handleReset = () => {
     </div>
   </OperationModal>
 </template>
-
-<style scoped>
-.resize-modal-content {
-  display: flex;
-  gap: 24px;
-}
-
-.preview-section {
-  flex: 1;
-  min-width: 200px;
-}
-
-.preview-container {
-  background: var(--checkerboard-bg);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  overflow: hidden;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 300px;
-  object-fit: contain;
-}
-
-.preview-placeholder {
-  color: var(--color-text-muted);
-  font-size: 14px;
-}
-
-.controls-section {
-  width: 200px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.control-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.input-with-unit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.number-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.number-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.unit {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.checkbox-group {
-  flex-direction: row;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.info-text {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  line-height: 1.6;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-border);
-}
-</style>

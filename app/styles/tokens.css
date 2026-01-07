@@ -1,0 +1,214 @@
+/**
+ * Design Tokens
+ * グローバルテーマシステム - Apple HIG準拠
+ * 
+ * このファイルがすべてのデザイントークンの単一ソースです。
+ * コンポーネントはここで定義されたCSS変数のみを参照してください。
+ */
+
+:root {
+  /* ========================================
+   * Color Tokens
+   * ======================================== */
+  
+  /* Primary Colors */
+  --color-primary: #007AFF;
+  --color-primary-hover: #0056b3;
+  --color-primary-active: #004494;
+  --color-primary-light: rgba(0, 122, 255, 0.1);
+  
+  /* Secondary Colors */
+  --color-secondary: #5856D6;
+  --color-secondary-hover: #4442b3;
+  
+  /* Semantic Colors */
+  --color-success: #34C759;
+  --color-success-light: rgba(52, 199, 89, 0.1);
+  --color-warning: #FF9500;
+  --color-warning-light: rgba(255, 149, 0, 0.1);
+  --color-error: #FF3B30;
+  --color-error-light: rgba(255, 59, 48, 0.1);
+  --color-info: #5AC8FA;
+  --color-info-light: rgba(90, 200, 250, 0.1);
+  
+  /* Surface Colors */
+  --color-background: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F3F4F6;
+  --color-surface-tertiary: #E5E7EB;
+  --color-surface-hover: rgba(0, 0, 0, 0.04);
+  --color-surface-muted: #F3F4F6;
+  
+  /* Text Colors */
+  --color-text: #111827;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-text-muted: #9CA3AF;
+  --color-text-disabled: #D1D5DB;
+  --color-text-inverse: #FFFFFF;
+  
+  /* Border Colors */
+  --color-border: #E5E7EB;
+  --color-border-light: #F3F4F6;
+  --color-border-strong: #D1D5DB;
+  --color-border-focus: var(--color-primary);
+  
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay-light: rgba(0, 0, 0, 0.3);
+  
+  /* Checkerboard for transparency */
+  --checkerboard-bg: repeating-conic-gradient(#e5e7eb 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  
+  /* ========================================
+   * Typography Tokens
+   * ======================================== */
+  
+  /* Font Family */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  
+  /* Font Sizes */
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-base: 16px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
+  --font-size-4xl: 34px;
+  --font-size-5xl: 40px;
+  
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* ========================================
+   * Spacing Tokens
+   * ======================================== */
+  --space-0: 0px;
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-28: 28px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-56: 56px;
+  --space-64: 64px;
+  --space-80: 80px;
+  --space-96: 96px;
+  
+  /* ========================================
+   * Border Radius Tokens
+   * ======================================== */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-full: 9999px;
+  --radius-pill: 9999px;
+  
+  /* ========================================
+   * Shadow Tokens
+   * ======================================== */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.3);
+  
+  /* ========================================
+   * Animation Tokens
+   * ======================================== */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 200ms;
+  --duration-slower: 300ms;
+  --duration-slowest: 500ms;
+  
+  --ease-default: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  --transition-fast: 100ms var(--ease-out);
+  --transition-normal: 150ms var(--ease-out);
+  --transition-slow: 200ms var(--ease-out);
+  
+  /* ========================================
+   * Z-Index Tokens
+   * ======================================== */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  
+  /* ========================================
+   * Component-specific Tokens
+   * ======================================== */
+  
+  /* Button */
+  --button-height-sm: 32px;
+  --button-height-md: 40px;
+  --button-height-lg: 48px;
+  --button-padding-sm: var(--space-8) var(--space-12);
+  --button-padding-md: var(--space-10) var(--space-16);
+  --button-padding-lg: var(--space-14) var(--space-24);
+  
+  /* Input */
+  --input-height-sm: 32px;
+  --input-height-md: 40px;
+  --input-height-lg: 48px;
+  --input-padding: var(--space-8) var(--space-12);
+  
+  /* Modal */
+  --modal-padding: var(--space-20);
+  --modal-radius: var(--radius-lg);
+  --modal-shadow: var(--shadow-xl);
+  
+  /* Menu */
+  --menu-item-height: 36px;
+  --menu-padding: var(--space-4);
+}
+
+/* ========================================
+ * Dark Mode (Future)
+ * ======================================== */
+@media (prefers-color-scheme: dark) {
+  :root.auto-theme {
+    /* Dark mode tokens would go here */
+  }
+}

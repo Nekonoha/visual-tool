@@ -115,10 +115,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useBatchStore } from '~/stores/batch';
-import BatchQueue from '~/components/BatchQueue.vue';
-import Button from '~/components/Button.vue';
-import Slider from '~/components/Slider.vue';
-import ToolPanel from '~/components/ToolPanel.vue';
+import BatchQueue from '~/components/editor/BatchQueue.vue';
+import Button from '~/components/ui/Button.vue';
+import Slider from '~/components/ui/Slider.vue';
+import ToolPanel from '~/components/ui/ToolPanel.vue';
 
 definePageMeta({
   layout: 'default',
@@ -134,120 +134,3 @@ const handleProcess = async () => {
   await batchStore.processQueue();
 };
 </script>
-
-<style scoped>
-.page-convert {
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: var(--space-32);
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-8) 0;
-}
-
-.page-description {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.convert-container {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: var(--space-24);
-  height: calc(100vh - 200px);
-}
-
-.convert-main {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  overflow: hidden;
-}
-
-.convert-sidebar {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  overflow-y: auto;
-}
-
-.tool-hint {
-  margin: var(--space-8) 0 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.info-box {
-  padding: var(--space-16);
-  background: rgba(0, 122, 255, 0.05);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(0, 122, 255, 0.2);
-}
-
-.info-box__title {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-primary);
-  margin: 0 0 var(--space-8) 0;
-}
-
-.info-box__list {
-  margin: 0;
-  padding-left: var(--space-20);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.info-box__list li {
-  margin-bottom: var(--space-4);
-}
-
-.stats-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-  padding: var(--space-16);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.stats-card__item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stats-card__label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.stats-card__value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.stats-card__value--success {
-  color: #10b981;
-}
-
-@media (max-width: 1024px) {
-  .convert-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .convert-sidebar {
-    order: -1;
-  }
-}
-</style>

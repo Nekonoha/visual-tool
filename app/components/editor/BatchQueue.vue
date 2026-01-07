@@ -119,8 +119,8 @@
 
 <script setup lang="ts">
 import { useBatchStore } from '~/stores/batch';
-import Button from '~/components/Button.vue';
-import FileInput from '~/components/FileInput.vue';
+import Button from '~/components/ui/Button.vue';
+import FileInput from '~/components/ui/FileInput.vue';
 
 const batchStore = useBatchStore();
 

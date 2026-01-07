@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OperationModal from './OperationModal.vue';
-import Button from './Button.vue';
+import OperationModal from '~/components/modals/OperationModal.vue';
+import Button from '~/components/ui/Button.vue';
 
 interface Point {
   x: number; // 0..1
@@ -249,10 +249,10 @@ const handleCancel = () => {
   >
     <div class="tonecurve-content">
       <!-- プレビューエリア -->
-      <div class="preview-section">
-        <div class="preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="preview-image" />
-          <div v-else class="preview-placeholder">プレビュー</div>
+      <div class="modal-preview-section">
+        <div class="modal-preview-container">
+          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>
       
@@ -289,93 +289,3 @@ const handleCancel = () => {
     </div>
   </OperationModal>
 </template>
-
-<style scoped>
-.tonecurve-content {
-  display: flex;
-  gap: 20px;
-  min-height: 0;
-  flex: 1;
-}
-
-.preview-section {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  flex-direction: column;
-}
-
-.preview-container {
-  background: var(--checkerboard-bg);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  min-height: 200px;
-  overflow: hidden;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.preview-placeholder {
-  color: var(--color-text-muted);
-  font-size: 13px;
-}
-
-.curve-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.curve {
-  background: var(--color-surface-muted);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.curve__bg {
-  fill: var(--color-surface-muted);
-}
-
-.curve__line {
-  fill: none;
-  stroke: var(--color-primary);
-  stroke-width: 2;
-}
-
-.curve__handle {
-  fill: var(--color-primary);
-  stroke: white;
-  stroke-width: 2;
-  cursor: grab;
-}
-
-.curve__handle:active {
-  cursor: grabbing;
-}
-
-.curve__toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.curve__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.curve__hint {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-</style>

@@ -129,10 +129,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useBatchStore } from '~/stores/batch';
-import BatchQueue from '~/components/BatchQueue.vue';
-import Button from '~/components/Button.vue';
-import Slider from '~/components/Slider.vue';
-import ToolPanel from '~/components/ToolPanel.vue';
+import BatchQueue from '~/components/editor/BatchQueue.vue';
+import Button from '~/components/ui/Button.vue';
+import Slider from '~/components/ui/Slider.vue';
+import ToolPanel from '~/components/ui/ToolPanel.vue';
 
 definePageMeta({
   layout: 'default',
@@ -148,69 +148,3 @@ const handleProcess = async () => {
   await batchStore.processQueue();
 };
 </script>
-
-<style scoped>
-.page-organize {
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: var(--space-32);
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-8) 0;
-}
-
-.page-description {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.organize-container {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: var(--space-24);
-  height: calc(100vh - 200px);
-}
-
-.organize-main {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  overflow: hidden;
-}
-
-.organize-sidebar {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  overflow-y: auto;
-}
-
-.tool-hint {
-  margin: var(--space-8) 0 0 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
-.btn--full-width {
-  width: 100%;
-}
-
-@media (max-width: 1024px) {
-  .organize-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .organize-sidebar {
-    order: -1;
-  }
-}
-</style>

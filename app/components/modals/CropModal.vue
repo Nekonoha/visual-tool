@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OperationModal from './OperationModal.vue';
-import InteractiveCrop from './InteractiveCrop.vue';
+import OperationModal from '~/components/modals/OperationModal.vue';
+import InteractiveCrop from '~/components/editor/InteractiveCrop.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -129,10 +129,10 @@ const handleReset = () => {
           :image-height="imageHeight"
           @crop-change="handleCropChange"
         />
-        <div v-else class="preview-placeholder">プレビュー</div>
+        <div v-else class="modal-preview-placeholder">プレビュー</div>
       </div>
       
-      <div class="controls-section">
+      <div class="modal-controls-section">
         <div class="control-group">
           <label class="control-label">アスペクト比</label>
           <div class="aspect-buttons">
@@ -200,95 +200,3 @@ const handleReset = () => {
     </div>
   </OperationModal>
 </template>
-
-<style scoped>
-.crop-modal-content {
-  display: flex;
-  gap: 24px;
-}
-
-.crop-preview-section {
-  flex: 1;
-  min-width: 400px;
-  max-height: 500px;
-  overflow: auto;
-}
-
-.preview-placeholder {
-  background: var(--color-surface-alt);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: var(--color-text-muted);
-}
-
-.controls-section {
-  width: 180px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.control-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.aspect-buttons {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.aspect-btn {
-  padding: 6px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.aspect-btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.aspect-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-.number-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.number-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.info-text {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  line-height: 1.6;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-border);
-}
-</style>

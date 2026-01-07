@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import OperationModal from './OperationModal.vue';
-import Slider from './Slider.vue';
-import FileInput from './FileInput.vue';
+import OperationModal from '~/components/modals/OperationModal.vue';
+import Slider from '~/components/ui/Slider.vue';
+import FileInput from '~/components/ui/FileInput.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -156,14 +156,14 @@ const positions = [
     @reset="handleReset"
   >
     <div class="watermark-modal-content">
-      <div class="preview-section">
-        <div class="preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="preview-image" />
-          <div v-else class="preview-placeholder">プレビュー</div>
+      <div class="modal-preview-section">
+        <div class="modal-preview-container">
+          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>
       
-      <div class="controls-section">
+      <div class="modal-controls-section modal-controls-section--wide">
         <div class="control-group">
           <label class="control-label">種類</label>
           <div class="type-buttons">
@@ -314,126 +314,3 @@ const positions = [
     </div>
   </OperationModal>
 </template>
-
-<style scoped>
-.watermark-modal-content {
-  display: flex;
-  gap: 24px;
-}
-
-.preview-section {
-  flex: 1;
-  min-width: 300px;
-}
-
-.preview-container {
-  background: var(--checkerboard-bg);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  overflow: hidden;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 400px;
-  object-fit: contain;
-}
-
-.preview-placeholder {
-  color: var(--color-text-muted);
-  font-size: 14px;
-}
-
-.controls-section {
-  width: 240px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 450px;
-  overflow-y: auto;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.control-label {
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.type-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.type-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.type-btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.type-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-.text-input,
-.select-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 14px;
-}
-
-.text-input:focus,
-.select-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.color-input {
-  width: 100%;
-  height: 36px;
-  padding: 2px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  cursor: pointer;
-}
-
-.file-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.file-input {
-  font-size: 12px;
-}
-
-.file-name {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  word-break: break-all;
-}
-</style>

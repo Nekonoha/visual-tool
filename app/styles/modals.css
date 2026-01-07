@@ -1,0 +1,631 @@
+/* ==========================================================================
+   Modal Styles
+   Consolidated styles for all modal components
+   ========================================================================== */
+
+/* ==========================================================================
+   Base Modal (OperationModal)
+   ========================================================================== */
+
+.operation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.operation-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.operation-modal--resizable {
+  resize: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-20);
+  border-bottom: 1px solid var(--color-border);
+  cursor: grab;
+  user-select: none;
+}
+
+.modal-header:active {
+  cursor: grabbing;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.modal-close:hover {
+  color: var(--color-text-primary);
+}
+
+.modal-body {
+  padding: var(--space-20);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-20);
+  border-top: 1px solid var(--color-border);
+  gap: var(--space-12);
+}
+
+.footer-left {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.footer-right {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.modal-btn {
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.modal-btn-reset {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.modal-btn-reset:hover {
+  background: var(--color-surface-muted);
+}
+
+.modal-btn-cancel {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.modal-btn-cancel:hover {
+  background: var(--color-surface-muted);
+}
+
+.modal-btn-apply {
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.modal-btn-apply:hover:not(:disabled) {
+  background: var(--color-primary-strong);
+}
+
+.modal-btn-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: modal-spin 0.8s linear infinite;
+}
+
+@keyframes modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Resize Handle */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--color-text-tertiary) 50%);
+  opacity: 0.4;
+  transition: opacity 0.15s;
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+.resize-handle:hover {
+  opacity: 0.7;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--color-text-tertiary);
+  border-bottom: 2px solid var(--color-text-tertiary);
+}
+
+/* ==========================================================================
+   Shared Modal Content Layout
+   ========================================================================== */
+
+.modal-content-layout {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.modal-preview-section {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-preview-container {
+  background: var(--checkerboard-bg);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.modal-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.modal-preview-placeholder {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.modal-controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  flex-shrink: 0;
+}
+
+.modal-controls-section--narrow {
+  width: 200px;
+}
+
+.modal-controls-section--wide {
+  width: 240px;
+}
+
+/* Control Group */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.control-group--horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+
+.control-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   Tone Curve Modal
+   ========================================================================== */
+
+.tonecurve-content {
+  display: flex;
+  gap: var(--space-20);
+  min-height: 0;
+  flex: 1;
+}
+
+.curve-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  flex-shrink: 0;
+}
+
+.curve {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.curve__bg {
+  fill: var(--color-surface-muted);
+}
+
+.curve__line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.curve__handle {
+  fill: var(--color-primary);
+  stroke: white;
+  stroke-width: 2;
+  cursor: grab;
+}
+
+.curve__handle:active {
+  cursor: grabbing;
+}
+
+.curve__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.curve__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.curve__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+/* ==========================================================================
+   Watermark Modal
+   ========================================================================== */
+
+.watermark-modal-content {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.watermark-modal-content .modal-preview-section {
+  min-width: 300px;
+}
+
+.watermark-modal-content .modal-preview-container {
+  min-height: 300px;
+}
+
+.watermark-modal-content .modal-preview-image {
+  max-height: 400px;
+}
+
+.watermark-modal-content .modal-controls-section {
+  width: 240px;
+  max-height: 450px;
+  overflow-y: auto;
+}
+
+.type-buttons {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.type-btn {
+  flex: 1;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.type-btn:hover {
+  background: var(--color-surface-muted);
+}
+
+.type-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+}
+
+.text-input:focus,
+.select-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.color-input {
+  width: 100%;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.file-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.file-input {
+  font-size: var(--font-size-xs);
+}
+
+.file-name {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  word-break: break-all;
+}
+
+/* ==========================================================================
+   Transform Modal
+   ========================================================================== */
+
+.transform-modal-content {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.transform-modal-content .modal-preview-section {
+  min-width: 250px;
+}
+
+.transform-modal-content .modal-preview-container {
+  min-height: 250px;
+}
+
+.transform-modal-content .modal-preview-image {
+  max-height: 350px;
+}
+
+.transform-modal-content .modal-controls-section {
+  width: 220px;
+  gap: var(--space-20);
+}
+
+.button-row {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.action-btn {
+  flex: 1;
+  padding: var(--space-10) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  background: var(--color-surface-muted);
+}
+
+.action-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* ==========================================================================
+   Resize Modal
+   ========================================================================== */
+
+.resize-modal-content {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.resize-modal-content .modal-preview-section {
+  min-width: 200px;
+}
+
+.resize-modal-content .modal-preview-container {
+  min-height: 200px;
+}
+
+.resize-modal-content .modal-preview-image {
+  max-height: 300px;
+}
+
+.resize-modal-content .modal-controls-section {
+  width: 200px;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.number-input {
+  flex: 1;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.unit {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.checkbox-group {
+  flex-direction: row;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.info-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1.6;
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ==========================================================================
+   Brightness/Contrast & Hue/Saturation Modals
+   ========================================================================== */
+
+.bc-modal-content,
+.hsv-modal-content {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.bc-modal-content .modal-preview-section,
+.hsv-modal-content .modal-preview-section {
+  min-width: 250px;
+}
+
+.bc-modal-content .modal-preview-container,
+.hsv-modal-content .modal-preview-container {
+  min-height: 250px;
+}
+
+.bc-modal-content .modal-preview-image,
+.hsv-modal-content .modal-preview-image {
+  max-height: 350px;
+}
+
+.bc-modal-content .modal-controls-section,
+.hsv-modal-content .modal-controls-section {
+  width: 200px;
+  gap: var(--space-20);
+}
+
+/* ==========================================================================
+   Crop Modal
+   ========================================================================== */
+
+.crop-modal-content {
+  display: flex;
+  gap: var(--space-24);
+}
+
+.crop-preview-section {
+  flex: 1;
+  min-width: 400px;
+  max-height: 500px;
+  overflow: auto;
+}
+
+.crop-modal-content .modal-preview-placeholder {
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  height: 300px;
+}
+
+.crop-modal-content .modal-controls-section {
+  width: 180px;
+}
+
+.aspect-buttons {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.aspect-btn {
+  padding: var(--space-6) var(--space-10);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.aspect-btn:hover {
+  background: var(--color-surface-muted);
+}
+
+.aspect-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* Reuse number-input from resize modal */
+.crop-modal-content .number-input {
+  width: 100%;
+}

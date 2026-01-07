@@ -25,7 +25,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import Button from './Button.vue';
+import Button from '~/components/ui/Button.vue';
 
 interface Props {
   title?: string;

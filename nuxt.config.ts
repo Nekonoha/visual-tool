@@ -6,11 +6,10 @@ export default defineNuxtConfig({
   // SSR無効化（SPA モード）
   ssr: false,
   
-  // CSS
+  // CSS - メインエントリーポイントのみ
   css: [
     '@fortawesome/fontawesome-free/css/all.min.css',
-    '~/styles/globals.css',
-    '~/styles/components.css',
+    '~/styles/main.css',
   ],
   
   // Modules
@@ -23,6 +22,6 @@ export default defineNuxtConfig({
   
   // Auto imports
   imports: {
-    dirs: ['./app/stores', './app/composables'],
+    dirs: ['./app/stores', './app/composables', './app/types'],
   },
 })

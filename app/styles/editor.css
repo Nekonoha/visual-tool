@@ -1,0 +1,322 @@
+/* ==========================================================================
+   Editor Styles
+   Styles for editor components (menu bar, image preview, interactive crop)
+   ========================================================================== */
+
+/* ==========================================================================
+   Editor Menu Bar
+   ========================================================================== */
+
+.editor-menu-bar {
+  display: flex;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-8);
+  height: 32px;
+  align-items: stretch;
+}
+
+.menu-item {
+  position: relative;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  padding: 0 var(--space-12);
+  height: 100%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-button:hover,
+.menu-item.active .menu-button {
+  background: var(--color-surface-muted);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
+  padding: var(--space-4) 0;
+}
+
+.menu-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-8) var(--space-16);
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-dropdown-item:hover:not(.disabled) {
+  background: var(--color-surface-muted);
+}
+
+.menu-dropdown-item.disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-4) var(--space-8);
+}
+
+/* ==========================================================================
+   Image Preview
+   ========================================================================== */
+
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.image-preview__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.image-preview__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin-left: auto;
+}
+
+.image-preview__btn {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.image-preview__btn:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
+}
+
+.image-preview__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.image-preview__zoom input[type='range'] {
+  width: 140px;
+}
+
+.image-preview__container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  background: var(--checkerboard-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.image-preview__container.is-pannable {
+  cursor: grab;
+}
+
+.image-preview__container.is-pannable:active {
+  cursor: grabbing;
+}
+
+.image-preview__content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.image-preview__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+.image-preview__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-tertiary);
+}
+
+.image-preview__placeholder svg {
+  width: 48px;
+  height: 48px;
+}
+
+/* ==========================================================================
+   Interactive Crop
+   ========================================================================== */
+
+.interactive-crop {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.interactive-crop__wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.interactive-crop__image {
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.interactive-crop__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+}
+
+.interactive-crop__rect {
+  pointer-events: none;
+}
+
+.interactive-crop__drag-area {
+  cursor: move;
+}
+
+.interactive-crop__handle {
+  cursor: pointer;
+  transition: r 0.15s;
+}
+
+.interactive-crop__handle:hover {
+  r: 10;
+}
+
+.interactive-crop__edge {
+  cursor: pointer;
+  fill: transparent;
+}
+
+.interactive-crop__edge:hover {
+  fill: rgba(0, 122, 255, 0.1);
+}
+
+/* Cursor styles for different handles */
+.interactive-crop__handle[data-position="nw"],
+.interactive-crop__handle[data-position="se"] {
+  cursor: nwse-resize;
+}
+
+.interactive-crop__handle[data-position="ne"],
+.interactive-crop__handle[data-position="sw"] {
+  cursor: nesw-resize;
+}
+
+.interactive-crop__edge[data-position="n"],
+.interactive-crop__edge[data-position="s"] {
+  cursor: ns-resize;
+}
+
+.interactive-crop__edge[data-position="e"],
+.interactive-crop__edge[data-position="w"] {
+  cursor: ew-resize;
+}
+
+/* ==========================================================================
+   Tool Panel
+   ========================================================================== */
+
+.tool-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-panel__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.tool-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.tool-panel__close:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+
+.tool-panel__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tool-panel__content {
+  padding: var(--space-16);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tool-panel__footer {
+  padding: var(--space-12) var(--space-16);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--space-8);
+  justify-content: flex-end;
+}
