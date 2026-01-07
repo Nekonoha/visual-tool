@@ -59,26 +59,6 @@
           </p>
         </NuxtLink>
 
-        <div class="feature-card feature-card--disabled">
-          <div class="feature-card__icon">
-            <i class="fa-solid fa-eraser" aria-hidden="true"></i>
-          </div>
-          <h3 class="feature-card__title">背景削除</h3>
-          <p class="feature-card__description">
-            AIで背景を自動削除（近日公開）
-          </p>
-        </div>
-
-        <NuxtLink to="/editor" class="feature-card">
-          <div class="feature-card__icon">
-            <i class="fa-solid fa-water" aria-hidden="true"></i>
-          </div>
-          <h3 class="feature-card__title">ウォーターマーク</h3>
-          <p class="feature-card__description">
-            テキスト/画像の透かしを配置し透明度・位置を調整
-          </p>
-        </NuxtLink>
-
         <NuxtLink to="/organize" class="feature-card">
           <div class="feature-card__icon">
             <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>

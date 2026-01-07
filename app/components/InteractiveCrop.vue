@@ -1,24 +1,26 @@
 <template>
-  <div class="interactive-crop" ref="containerRef">
-    <img
-      v-if="src"
-      :src="src"
-      alt="Crop preview"
-      class="interactive-crop__image"
-      @load="handleImageLoad"
-      ref="imageRef"
-    />
-    <svg
-      v-if="isReady"
-      class="interactive-crop__overlay"
-      :width="containerWidth"
-      :height="containerHeight"
-      @pointerdown.self="handleBackgroundClick"
-    >
+  <div class="interactive-crop" ref="scrollContainerRef">
+    <div class="interactive-crop__wrapper" ref="containerRef" :style="wrapperStyle">
+      <img
+        v-if="src"
+        :src="src"
+        alt="Crop preview"
+        class="interactive-crop__image"
+        @load="handleImageLoad"
+        ref="imageRef"
+        :style="imageStyle"
+      />
+      <svg
+        v-if="isReady"
+        class="interactive-crop__overlay"
+        :width="imageDisplayWidth"
+        :height="imageDisplayHeight"
+        @pointerdown.self="handleBackgroundClick"
+      >
       <!-- 暗い外側マスク -->
       <defs>
         <mask id="crop-mask">
-          <rect :width="containerWidth" :height="containerHeight" fill="white" />
+          <rect :width="imageDisplayWidth" :height="imageDisplayHeight" fill="white" />
           <rect
             :x="displayRect.x"
             :y="displayRect.y"
@@ -29,8 +31,8 @@
         </mask>
       </defs>
       <rect
-        :width="containerWidth"
-        :height="containerHeight"
+        :width="imageDisplayWidth"
+        :height="imageDisplayHeight"
         fill="rgba(0, 0, 0, 0.5)"
         mask="url(#crop-mask)"
       />
@@ -109,6 +111,7 @@
         @pointerdown="handleDragStart($event, edge.position)"
       />
     </svg>
+    </div>
   </div>
 </template>
 
@@ -144,14 +147,13 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
+const scrollContainerRef = ref<HTMLElement | null>(null);
 const containerRef = ref<HTMLElement | null>(null);
 const imageRef = ref<HTMLImageElement | null>(null);
-const containerWidth = ref(0);
-const containerHeight = ref(0);
+const scrollContainerWidth = ref(0);
+const scrollContainerHeight = ref(0);
 const imageDisplayWidth = ref(0);
 const imageDisplayHeight = ref(0);
-const imageOffsetX = ref(0);
-const imageOffsetY = ref(0);
 const isReady = ref(false);
 
 const dragging = ref<string | null>(null);
@@ -166,13 +168,25 @@ const dragStartCropHeight = ref(0);
 const naturalWidth = computed(() => props.imageWidth || imageRef.value?.naturalWidth || 1);
 const naturalHeight = computed(() => props.imageHeight || imageRef.value?.naturalHeight || 1);
 
-// 表示座標系でのクロップ矩形
+// ラッパーとイメージのスタイル
+const wrapperStyle = computed(() => ({
+  width: `${imageDisplayWidth.value}px`,
+  height: `${imageDisplayHeight.value}px`,
+  margin: '24px',
+}));
+
+const imageStyle = computed(() => ({
+  width: `${imageDisplayWidth.value}px`,
+  height: `${imageDisplayHeight.value}px`,
+}));
+
+// 表示座標系でのクロップ矩形（オフセット不要、wrapper内で位置が決まる）
 const displayRect = computed(() => {
   const scaleX = imageDisplayWidth.value / naturalWidth.value;
   const scaleY = imageDisplayHeight.value / naturalHeight.value;
   return {
-    x: imageOffsetX.value + props.cropX * scaleX,
-    y: imageOffsetY.value + props.cropY * scaleY,
+    x: props.cropX * scaleX,
+    y: props.cropY * scaleY,
     width: props.cropWidth * scaleX,
     height: props.cropHeight * scaleY,
   };
@@ -198,27 +212,30 @@ const handleImageLoad = () => {
 };
 
 const updateDimensions = () => {
-  if (!containerRef.value || !imageRef.value) return;
-  const container = containerRef.value.getBoundingClientRect();
-  containerWidth.value = container.width;
-  containerHeight.value = container.height;
+  if (!scrollContainerRef.value || !imageRef.value) return;
+  const scrollContainer = scrollContainerRef.value.getBoundingClientRect();
+  scrollContainerWidth.value = scrollContainer.width;
+  scrollContainerHeight.value = scrollContainer.height;
 
   const imgNaturalW = naturalWidth.value;
   const imgNaturalH = naturalHeight.value;
-  const containerAspect = container.width / container.height;
-  const imageAspect = imgNaturalW / imgNaturalH;
+  
+  // 利用可能なスペース（マージン48px分を引く）
+  const availableW = scrollContainer.width - 48;
+  const availableH = scrollContainer.height - 48;
 
-  if (imageAspect > containerAspect) {
-    imageDisplayWidth.value = container.width;
-    imageDisplayHeight.value = container.width / imageAspect;
-    imageOffsetX.value = 0;
-    imageOffsetY.value = (container.height - imageDisplayHeight.value) / 2;
-  } else {
-    imageDisplayHeight.value = container.height;
-    imageDisplayWidth.value = container.height * imageAspect;
-    imageOffsetX.value = (container.width - imageDisplayWidth.value) / 2;
-    imageOffsetY.value = 0;
-  }
+  // 画像がコンテナに収まる場合はフィット、収まらない場合はスクロール
+  // ただし最小でも400x400は確保
+  const maxDisplayW = Math.max(400, availableW);
+  const maxDisplayH = Math.max(400, availableH);
+
+  // アスペクト比を保ってスケール
+  const scaleW = maxDisplayW / imgNaturalW;
+  const scaleH = maxDisplayH / imgNaturalH;
+  const scale = Math.min(scaleW, scaleH, 1); // 1以下に制限して拡大しない
+  
+  imageDisplayWidth.value = Math.round(imgNaturalW * scale);
+  imageDisplayHeight.value = Math.round(imgNaturalH * scale);
 };
 
 const handleDragStart = (e: PointerEvent, position: string) => {
@@ -308,8 +325,8 @@ const resizeObserver = new ResizeObserver(() => {
 });
 
 onMounted(() => {
-  if (containerRef.value) {
-    resizeObserver.observe(containerRef.value);
+  if (scrollContainerRef.value) {
+    resizeObserver.observe(scrollContainerRef.value);
   }
   updateDimensions();
 });

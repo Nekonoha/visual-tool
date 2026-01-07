@@ -6,545 +6,132 @@
     </div>
 
     <div class="editor">
+      <!-- メニューバー -->
+      <EditorMenuBar
+        :can-undo="imageStore.canUndo"
+        :can-redo="imageStore.canRedo"
+        :has-image="imageStore.hasImage"
+        @undo="handleUndo"
+        @redo="handleRedo"
+        @reset="handleResetOps"
+        @download="handleDownload"
+        @open-resize="showResizeModal = true"
+        @open-crop="showCropModal = true"
+        @open-transform="showTransformModal = true"
+        @open-brightness-contrast="showBrightnessContrastModal = true"
+        @open-hue-saturation="showHueSaturationModal = true"
+        @open-tone-curve="showToneCurveModal = true"
+        @open-grayscale="handleGrayscale"
+        @open-sepia="handleSepia"
+        @open-watermark="showWatermarkModal = true"
+      />
+
       <div class="editor__container">
-        <!-- メインエディタエリア -->
+        <!-- メインプレビューエリア -->
         <div class="editor__preview-section">
           <div class="editor__preview-header">
             <h2 class="editor__preview-title">プレビュー</h2>
-            <div class="editor__preview-actions">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!imageStore.hasImage"
-                @click="handleResetOps"
-              >
-                操作リセット
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!imageStore.hasImage"
-                @click="handleClearImage"
-              >
-                画像を消す
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!imageStore.canUndo"
-                @click="handleUndo"
-              >
-                一手戻る
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="!imageStore.canRedo"
-                @click="handleRedo"
-              >
-                一手進む
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                @click="handleDownload"
-                :disabled="!imageStore.hasImage"
-                :loading="imageStore.isProcessing"
-              >
-                ダウンロード
-              </Button>
+            <div v-if="imageStore.hasImage" class="editor__preview-info">
+              {{ imageStore.imageInfo?.width }} × {{ imageStore.imageInfo?.height }} px
             </div>
           </div>
 
-          <InteractiveCrop
-            v-if="cropMode && imageStore.hasImage"
-            :src="imageStore.processedDataURL"
-            v-model:crop-x="cropX"
-            v-model:crop-y="cropY"
-            v-model:crop-width="cropWidth"
-            v-model:crop-height="cropHeight"
-            :image-width="imageStore.imageInfo?.width"
-            :image-height="imageStore.imageInfo?.height"
-            @crop-change="handleInteractiveCropChange"
-          />
-          <ImagePreview
-            v-else
-            :src="imageStore.processedDataURL"
-            :image-size="imageStore.imageSize"
-            title="プレビュー"
-          />
-          <div v-if="!imageStore.hasImage" class="editor__upload-hint">
+          <div v-if="imageStore.hasImage" class="editor__preview-content">
+            <ImagePreview
+              :src="imageStore.processedDataURL"
+              :image-size="imageStore.imageSize"
+              title=""
+            />
+          </div>
+          <div v-else class="editor__upload-hint">
             <FileInput @file-selected="handleFileSelected" />
-            <p class="hint">画像をアップロードすると右の操作パネルで編集できます。</p>
-          </div>
-        </div>
-
-        <!-- サイドバー - ツールパネル -->
-        <div class="editor__sidebar">
-          <div class="editor__tabs">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              :class="['editor__tab', { 'editor__tab--active': activeTab === tab.id }]"
-              @click="activeTab = tab.id"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <div class="editor__tools">
-            <!-- リサイズタブ -->
-            <ToolPanel v-if="activeTab === 'resize'" title="リサイズ" :show-close="false">
-              <template #default>
-                <section class="panel-section">
-                  <div class="panel-section__content">
-                    <div class="tool-group">
-                      <label class="tool-label">スケール (%)</label>
-                      <Slider
-                        v-model="scalePercent"
-                        :min="10"
-                        :max="200"
-                        :step="1"
-                        unit="%"
-                        :disabled="!imageStore.hasImage"
-                        @update:modelValue="handleScaleChange"
-                      />
-                    </div>
-                    <div class="tool-grid tool-grid--2">
-                      <label class="tool-label">
-                        幅 (px)
-                        <input
-                          v-model.number="resizeWidth"
-                          type="number"
-                          class="tool-input"
-                          :disabled="!imageStore.hasImage"
-                          @input="updateResizeDimensions"
-                        />
-                      </label>
-                      <label class="tool-label">
-                        高さ (px)
-                        <input
-                          v-model.number="resizeHeight"
-                          type="number"
-                          class="tool-input"
-                          :disabled="!imageStore.hasImage"
-                          @input="updateResizeDimensions"
-                        />
-                      </label>
-                    </div>
-                    <label class="tool-checkbox">
-                      <input v-model="maintainAspect" type="checkbox" :disabled="!imageStore.hasImage" />
-                      <span>アスペクト比を保持</span>
-                    </label>
-                  </div>
-                </section>
-              </template>
-            </ToolPanel>
-
-            <!-- クロップタブ -->
-            <ToolPanel v-if="activeTab === 'crop'" title="クロップ" :show-close="false">
-              <template #default>
-                <section class="panel-section">
-                  <div class="panel-section__content">
-                    <div class="tool-group">
-                      <label class="tool-label">プリセット</label>
-                      <div class="chip-row">
-                        <button
-                          v-for="preset in ['free','1:1','4:3','16:9']"
-                          :key="preset"
-                          type="button"
-                          :class="['chip', { 'chip--active': cropAspect === preset }]"
-                          :disabled="!imageStore.hasImage"
-                          @click="handleCropPreset(preset as 'free' | '1:1' | '4:3' | '16:9')"
-                        >
-                          {{ preset === 'free' ? 'フリー' : preset }}
-                        </button>
-                      </div>
-                    </div>
-                    <div class="tool-group">
-                      <label class="tool-label">サイズ (%)</label>
-                      <Slider
-                        v-model="cropSizePercent"
-                        :min="5"
-                        :max="100"
-                        :step="1"
-                        unit="%"
-                        :disabled="!imageStore.hasImage"
-                        @update:modelValue="handleCropSizePercent"
-                      />
-                    </div>
-                    <div class="tool-button-group">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        full-width
-                        :disabled="!imageStore.hasImage"
-                        @click="handleCropApply"
-                      >
-                        クロップを適用
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        full-width
-                        :disabled="!imageStore.hasImage"
-                        @click="handleCropReset"
-                      >
-                        リセット
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              </template>
-            </ToolPanel>
-
-            <!-- 回転・反転タブ -->
-            <ToolPanel v-if="activeTab === 'transform'" title="回転・反転" :show-close="false">
-              <template #default>
-                <section class="panel-section">
-                  <div class="panel-section__content">
-                    <div class="tool-group">
-                      <label class="tool-label">回転 (度)</label>
-                      <Slider
-                        v-model="rotationDegrees"
-                        :min="0"
-                        :max="360"
-                        :step="1"
-                        unit="°"
-                        :disabled="!imageStore.hasImage"
-                        @update:modelValue="handleRotateRealtime"
-                        @drag-end="handleRotateCommit"
-                      />
-                    </div>
-                    <div class="tool-button-group">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        full-width
-                        @click="handleFlipHorizontal"
-                        :disabled="!imageStore.hasImage"
-                      >
-                        水平反転
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        full-width
-                        @click="handleFlipVertical"
-                        :disabled="!imageStore.hasImage"
-                      >
-                        垂直反転
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              </template>
-            </ToolPanel>
-
-            <!-- フィルタータブ -->
-            <ToolPanel v-if="activeTab === 'filters'" title="色・効果" :show-close="false">
-              <template #default>
-                <section class="panel-section">
-                  <div class="panel-section__content">
-                    <div class="filters-grid">
-                      <div class="tool-group">
-                        <label class="tool-label">明度</label>
-                        <Slider
-                          v-model="brightness"
-                          :min="0"
-                          :max="200"
-                          :step="1"
-                          unit="%"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                      <div class="tool-group">
-                        <label class="tool-label">コントラスト</label>
-                        <Slider
-                          v-model="contrast"
-                          :min="0"
-                          :max="200"
-                          :step="1"
-                          unit="%"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                      <div class="tool-group">
-                        <label class="tool-label">彩度</label>
-                        <Slider
-                          v-model="saturation"
-                          :min="0"
-                          :max="200"
-                          :step="1"
-                          unit="%"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                      <div class="tool-group">
-                        <label class="tool-label">ガンマ</label>
-                        <Slider
-                          v-model="gamma"
-                          :min="10"
-                          :max="300"
-                          :step="1"
-                          unit="%"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                      <div class="tool-group">
-                        <label class="tool-label">色相</label>
-                        <Slider
-                          v-model="hue"
-                          :min="0"
-                          :max="360"
-                          :step="1"
-                          unit="°"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                      <div class="tool-group">
-                        <label class="tool-label">ぼかし</label>
-                        <Slider
-                          v-model="blurAmount"
-                          :min="0"
-                          :max="20"
-                          :step="1"
-                          unit="px"
-                          :disabled="!imageStore.hasImage"
-                          @update:modelValue="applyFiltersRealtime"
-                          @drag-end="handleFiltersCommit"
-                        />
-                      </div>
-                    </div>
-                    <div class="filter-actions">
-                      <div class="tool-button-group">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          full-width
-                          @click="handleGrayscale"
-                          :disabled="!imageStore.hasImage"
-                        >
-                          グレースケール
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          full-width
-                          @click="handleSepia"
-                          :disabled="!imageStore.hasImage"
-                        >
-                          セピア
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          full-width
-                          @click="showToneCurve = true"
-                          :disabled="!imageStore.hasImage"
-                        >
-                          トーンカーブ
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </template>
-            </ToolPanel>
-
-            <!-- 透かしタブ -->
-            <ToolPanel v-if="activeTab === 'watermark'" title="透かし" :show-close="false">
-              <template #default>
-                <section class="panel-section">
-                  <div class="panel-section__content">
-                    <div class="tool-group">
-                      <label class="tool-label">種別</label>
-                      <div class="chip-row">
-                        <button
-                          v-for="type in ['none','text','image']"
-                          :key="type"
-                          type="button"
-                          :class="['chip', { 'chip--active': watermarkType === type }]"
-                          :disabled="!imageStore.hasImage"
-                          @click="setWatermarkType(type as 'none' | 'text' | 'image')"
-                        >
-                          {{ type === 'none' ? 'なし' : type === 'text' ? 'テキスト' : '画像' }}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div v-if="watermarkType === 'text'" class="tool-group">
-                      <label class="tool-label">テキスト</label>
-                      <input
-                        v-model="watermarkText"
-                        type="text"
-                        class="tool-input"
-                        :disabled="!imageStore.hasImage"
-                        @input="applyRealtimeOps"
-                      />
-                    </div>
-
-                    <div v-if="watermarkType === 'text'" class="tool-group">
-                      <label class="tool-label">フォントサイズ</label>
-                      <Slider
-                        v-model="watermarkFontSize"
-                        :min="8"
-                        :max="120"
-                        :step="1"
-                        unit="px"
-                        :disabled="!imageStore.hasImage"
-                        @update:modelValue="applyRealtimeOps"
-                      />
-                    </div>
-
-                    <div v-if="watermarkType === 'text'" class="tool-group">
-                      <label class="tool-label">色</label>
-                      <input
-                        v-model="watermarkColor"
-                        type="color"
-                        class="tool-input"
-                        :disabled="!imageStore.hasImage"
-                        @input="applyRealtimeOps"
-                      />
-                    </div>
-
-                    <div class="tool-group">
-                      <label class="tool-label">不透明度</label>
-                      <Slider
-                        v-model="watermarkOpacity"
-                        :min="0"
-                        :max="100"
-                        :step="1"
-                        unit="%"
-                        :disabled="!imageStore.hasImage"
-                        @update:modelValue="applyRealtimeOps"
-                      />
-                    </div>
-
-                    <div class="tool-group">
-                      <label class="tool-label">位置</label>
-                      <select
-                        v-model="watermarkPosition"
-                        class="tool-select"
-                        :disabled="!imageStore.hasImage"
-                        @change="applyRealtimeOps"
-                      >
-                        <option value="bottom-right">右下</option>
-                        <option value="bottom-left">左下</option>
-                        <option value="top-right">右上</option>
-                        <option value="top-left">左上</option>
-                        <option value="center">中央</option>
-                      </select>
-                    </div>
-
-                    <div class="tool-grid tool-grid--2">
-                      <label class="tool-label">
-                        オフセットX (px)
-                        <input
-                          v-model.number="watermarkOffsetX"
-                          type="number"
-                          class="tool-input"
-                          :disabled="!imageStore.hasImage"
-                          @input="applyRealtimeOps"
-                        />
-                      </label>
-                      <label class="tool-label">
-                        オフセットY (px)
-                        <input
-                          v-model.number="watermarkOffsetY"
-                          type="number"
-                          class="tool-input"
-                          :disabled="!imageStore.hasImage"
-                          @input="applyRealtimeOps"
-                        />
-                      </label>
-                    </div>
-
-                    <div v-if="watermarkType === 'image'" class="tool-group">
-                      <label class="tool-label">透かし画像</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        class="tool-input"
-                        :disabled="!imageStore.hasImage"
-                        @change="handleWatermarkImageSelect"
-                      />
-                      <p v-if="watermarkImageName" class="tool-hint">{{ watermarkImageName }} を使用中</p>
-                    </div>
-
-                    <div v-if="watermarkType === 'image'" class="tool-group">
-                      <label class="tool-label">スケール</label>
-                      <Slider
-                        v-model="watermarkScale"
-                        :min="5"
-                        :max="200"
-                        :step="1"
-                        unit="%"
-                        :disabled="!imageStore.hasImage || !watermarkImageDataURL"
-                        @update:modelValue="applyRealtimeOps"
-                      />
-                    </div>
-
-                    <div class="tool-button-group">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        full-width
-                        :disabled="!imageStore.hasImage"
-                        @click="handleWatermarkApply"
-                      >
-                        透かしを適用
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        full-width
-                        :disabled="!imageStore.hasImage"
-                        @click="handleWatermarkReset"
-                      >
-                        リセット
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              </template>
-            </ToolPanel>
+            <p class="hint">画像をアップロードして編集を開始してください</p>
           </div>
         </div>
       </div>
     </div>
-    
+
+    <!-- リサイズモーダル -->
+    <ResizeModal
+      v-model:visible="showResizeModal"
+      :current-width="imageStore.imageInfo?.width || 0"
+      :current-height="imageStore.imageInfo?.height || 0"
+      :preview-src="modalPreviewSrc"
+      @preview="handleResizePreview"
+      @apply="handleResizeApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- クロップモーダル -->
+    <CropModal
+      v-model:visible="showCropModal"
+      :image-width="imageStore.imageInfo?.width || 0"
+      :image-height="imageStore.imageInfo?.height || 0"
+      :preview-src="imageStore.processedDataURL"
+      @apply="handleCropApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- 回転・反転モーダル -->
+    <TransformModal
+      v-model:visible="showTransformModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleTransformPreview"
+      @apply="handleTransformApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- 明るさ・コントラストモーダル -->
+    <BrightnessContrastModal
+      v-model:visible="showBrightnessContrastModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleBrightnessContrastPreview"
+      @apply="handleBrightnessContrastApply"
+      @cancel="handleModalCancel"
+    />
+
+    <!-- 色相・彩度モーダル -->
+    <HueSaturationModal
+      v-model:visible="showHueSaturationModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleHueSaturationPreview"
+      @apply="handleHueSaturationApply"
+      @cancel="handleModalCancel"
+    />
+
     <!-- トーンカーブモーダル -->
     <ToneCurveModal
-      v-if="showToneCurve"
+      v-model:visible="showToneCurveModal"
       v-model="toneCurvePoints"
-      @update:modelValue="handleToneCurveUpdate"
+      :preview-src="modalPreviewSrc"
       @preview="handleToneCurvePreview"
       @apply="handleToneCurveApply"
-      @close="showToneCurve = false"
+      @cancel="handleToneCurveCancel"
+    />
+
+    <!-- ウォーターマークモーダル -->
+    <WatermarkModal
+      v-model:visible="showWatermarkModal"
+      :preview-src="modalPreviewSrc"
+      @preview="handleWatermarkPreview"
+      @apply="handleWatermarkApply"
+      @cancel="handleModalCancel"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import FileInput from '~/components/FileInput.vue';
 import ImagePreview from '~/components/ImagePreview.vue';
-import InteractiveCrop from '~/components/InteractiveCrop.vue';
-import Button from '~/components/Button.vue';
-import Slider from '~/components/Slider.vue';
-import ToolPanel from '~/components/ToolPanel.vue';
+import EditorMenuBar from '~/components/EditorMenuBar.vue';
+import ResizeModal from '~/components/ResizeModal.vue';
+import CropModal from '~/components/CropModal.vue';
+import TransformModal from '~/components/TransformModal.vue';
+import BrightnessContrastModal from '~/components/BrightnessContrastModal.vue';
+import HueSaturationModal from '~/components/HueSaturationModal.vue';
 import ToneCurveModal from '~/components/ToneCurveModal.vue';
+import WatermarkModal from '~/components/WatermarkModal.vue';
 import { useImageStore } from '~/stores/image';
 
 interface ToneCurvePoint {
@@ -557,504 +144,446 @@ definePageMeta({
 });
 
 const isServer = typeof window === 'undefined';
-// SSRガード: サーバーレンダリング時はスタブを返してクラッシュを防ぐ
 const imageStore = isServer
   ? ({ hasImage: false, imageInfo: null } as unknown as ReturnType<typeof useImageStore>)
   : useImageStore();
 
-const tabs = [
-  { id: 'resize', label: 'リサイズ' },
-  { id: 'crop', label: 'クロップ' },
-  { id: 'transform', label: '回転・反転' },
-  { id: 'filters', label: '色・効果' },
-  { id: 'watermark', label: '透かし' },
-];
+// モーダル表示状態
+const showResizeModal = ref(false);
+const showCropModal = ref(false);
+const showTransformModal = ref(false);
+const showBrightnessContrastModal = ref(false);
+const showHueSaturationModal = ref(false);
+const showToneCurveModal = ref(false);
+const showWatermarkModal = ref(false);
 
-const activeTab = ref('resize');
-const cropMode = computed(() => activeTab.value === 'crop');
+// モーダルプレビュー用
+const modalPreviewSrc = ref<string | null>(null);
 
-// リサイズ
-const resizeWidth = ref(0);
-const resizeHeight = ref(0);
-const maintainAspect = ref(true);
-const scalePercent = ref(100);
+// モーダル開始時のDataURLを保存（キャンセル時に復元用）
+const savedDataURLBeforeModal = ref<string | null>(null);
 
-// クロップ
-const cropX = ref(0);
-const cropY = ref(0);
-const cropWidth = ref(0);
-const cropHeight = ref(0);
-const cropSizePercent = ref(100);
-const cropAspect = ref<'free' | '1:1' | '4:3' | '16:9'>('free');
-
-// 回転
-const rotationDegrees = ref(0);
-
-// フィルター
-const brightness = ref(100);
-const contrast = ref(100);
-const saturation = ref(100);
-const blurAmount = ref(0);
-const hue = ref(0);
-const gamma = ref(100);
+// トーンカーブ用
 const toneCurvePoints = ref<ToneCurvePoint[]>([
   { x: 0, y: 0 },
-  { x: 0.33, y: 0.33 },
-  { x: 0.66, y: 0.66 },
+  { x: 0.25, y: 0.25 },
+  { x: 0.5, y: 0.5 },
+  { x: 0.75, y: 0.75 },
   { x: 1, y: 1 },
 ]);
-const showToneCurve = ref(false);
 
-// 透かし
-const watermarkType = ref<'none' | 'text' | 'image'>('none');
-const watermarkText = ref('Sample Watermark');
-const watermarkFontSize = ref(32);
-const watermarkColor = ref('#ffffff');
-const watermarkOpacity = ref(50);
-const watermarkPosition = ref<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'>('bottom-right');
-const watermarkOffsetX = ref(24);
-const watermarkOffsetY = ref(24);
-const watermarkScale = ref(30);
-const watermarkImageDataURL = ref<string | null>(null);
-const watermarkImageName = ref('');
+// モーダルが開いたときにプレビューソースを初期化＆元の状態を保存
+watch([showResizeModal, showTransformModal, showBrightnessContrastModal, showHueSaturationModal, showWatermarkModal, showToneCurveModal], (newVals) => {
+  const anyOpen = newVals.some(v => v);
+  if (anyOpen) {
+    savedDataURLBeforeModal.value = imageStore.processedDataURL;
+    modalPreviewSrc.value = imageStore.processedDataURL;
+  }
+});
 
 // ファイル選択
 const handleFileSelected = async (file: File) => {
   await imageStore.loadImage(file);
-  if (imageStore.imageInfo) {
-    syncUIFromOps();
-  }
+};
+
+// モーダルキャンセル時の共通処理
+const handleModalCancel = async () => {
+  // 履歴から再レンダリングして元の状態に戻す
+  await imageStore.renderFromHistory();
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
 // リサイズハンドラ
-const updateResizeDimensions = () => {
-  if (maintainAspect.value && imageStore.imageInfo) {
-    const ratio = imageStore.imageInfo.aspectRatio;
-    resizeHeight.value = Math.round(resizeWidth.value / ratio);
-  }
-  if (imageStore.imageInfo && imageStore.imageInfo.width) {
-    scalePercent.value = Math.round((resizeWidth.value / imageStore.imageInfo.width) * 100);
-  }
-  applyRealtimeOps();
+const handleResizePreview = async (width: number, height: number) => {
+  await imageStore.applyFiltersRealtime({
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    blur: 0,
+    hue: 0,
+    gamma: 1,
+    toneCurvePoints: undefined,
+    crop: null,
+    resizeWidth: width,
+    resizeHeight: height,
+    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
+  });
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleScaleChange = (val: number) => {
-  if (!imageStore.imageInfo) return;
-  const factor = val / 100;
-  resizeWidth.value = Math.max(1, Math.round(imageStore.imageInfo.width * factor));
-  resizeHeight.value = Math.max(1, Math.round(imageStore.imageInfo.height * factor));
-  scalePercent.value = val;
-  applyRealtimeOps();
+const handleResizeApply = async (width: number, height: number) => {
+  await imageStore.applyOperation({
+    type: 'resize',
+    params: { width, height },
+  });
+  showResizeModal.value = false;
 };
 
 // クロップハンドラ
-const applyCenteredCrop = (ratio: number | null, sizePercent: number) => {
-  if (!imageStore.imageInfo) return;
-  const baseW = imageStore.imageInfo.width;
-  const baseH = imageStore.imageInfo.height;
-  let w = baseW;
-  let h = baseH;
-  if (ratio) {
-    if (baseW / baseH > ratio) {
-      h = baseH;
-      w = Math.round(h * ratio);
-    } else {
-      w = baseW;
-      h = Math.round(w / ratio);
-    }
-  }
-  const factor = Math.max(1, Math.min(100, sizePercent)) / 100;
-  w = Math.max(1, Math.round(w * factor));
-  h = Math.max(1, Math.round(h * factor));
-  const x = Math.max(0, Math.round((baseW - w) / 2));
-  const y = Math.max(0, Math.round((baseH - h) / 2));
-  cropX.value = x;
-  cropY.value = y;
-  cropWidth.value = w;
-  cropHeight.value = h;
-};
-
-const handleCropPreset = (preset: 'free' | '1:1' | '4:3' | '16:9') => {
-  cropAspect.value = preset;
-  const ratioMap = { free: null, '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9 };
-  applyCenteredCrop(ratioMap[preset], cropSizePercent.value);
-};
-
-const handleCropSizePercent = (val: number) => {
-  cropSizePercent.value = val;
-  const ratioMap = { free: null, '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9 };
-  applyCenteredCrop(ratioMap[cropAspect.value], val);
-};
-
-const handleCropApply = () => {
-  if (!imageStore.hasImage) return;
-  imageStore.applyFiltersRealtime({
-    brightness: brightness.value,
-    contrast: contrast.value,
-    saturation: saturation.value,
-    blur: blurAmount.value,
-    hue: hue.value,
-    gamma: gamma.value / 100,
-    toneCurvePoints: toneCurvePoints.value,
-    crop: { x: cropX.value, y: cropY.value, width: cropWidth.value, height: cropHeight.value },
-    resizeWidth: resizeWidth.value !== imageStore.imageInfo?.width ? resizeWidth.value : null,
-    resizeHeight: resizeHeight.value !== imageStore.imageInfo?.height ? resizeHeight.value : null,
+const handleCropApply = async (crop: { x: number; y: number; width: number; height: number }) => {
+  await imageStore.applyOperation({
+    type: 'crop',
+    params: { crop },
   });
-  imageStore.commitOpsHistory();
-  activeTab.value = 'resize';
+  showCropModal.value = false;
 };
 
-const handleCropReset = () => {
-  if (!imageStore.imageInfo) return;
-  cropX.value = 0;
-  cropY.value = 0;
-  cropWidth.value = imageStore.imageInfo.width;
-  cropHeight.value = imageStore.imageInfo.height;
-  cropSizePercent.value = 100;
-  cropAspect.value = 'free';
+// 変形ハンドラ
+const handleTransformPreview = async (rotation: number, flipH: boolean, flipV: boolean) => {
+  imageStore.ops.rotation = rotation;
+  imageStore.ops.flipH = flipH;
+  imageStore.ops.flipV = flipV;
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleInteractiveCropChange = (crop: { x: number; y: number; width: number; height: number }) => {
-  cropX.value = crop.x;
-  cropY.value = crop.y;
-  cropWidth.value = crop.width;
-  cropHeight.value = crop.height;
+const handleTransformApply = async (rotation: number, flipH: boolean, flipV: boolean) => {
+  await imageStore.applyOperation({
+    type: 'transform',
+    params: { rotation, flipH, flipV },
+  });
+  showTransformModal.value = false;
 };
 
-// 回転ハンドラ
-const handleRotateRealtime = async () => {
-  if (!imageStore.hasImage) return;
-  await imageStore.rotate(rotationDegrees.value);
+// 明るさ・コントラストハンドラ
+const handleBrightnessContrastPreview = async (brightness: number, contrast: number) => {
+  await imageStore.applyFiltersRealtime({
+    brightness,
+    contrast,
+    saturation: 100,
+    blur: 0,
+    hue: 0,
+    gamma: 1,
+    toneCurvePoints: undefined,
+    crop: null,
+    resizeWidth: null,
+    resizeHeight: null,
+    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
+  });
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleRotateCommit = () => {
-  imageStore.commitOpsHistory();
+const handleBrightnessContrastApply = async (brightness: number, contrast: number) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: {
+      brightness,
+      contrast,
+      saturation: 100,
+      blur: 0,
+      hue: 0,
+      gamma: 1,
+      toneCurvePoints: undefined,
+    },
+  });
+  showBrightnessContrastModal.value = false;
 };
 
-const handleFlipHorizontal = async () => {
-  await imageStore.flipHorizontal();
+// 色相・彩度ハンドラ
+const handleHueSaturationPreview = async (hue: number, saturation: number, gamma: number) => {
+  await imageStore.applyFiltersRealtime({
+    brightness: 100,
+    contrast: 100,
+    saturation,
+    blur: 0,
+    hue,
+    gamma: gamma / 100,
+    toneCurvePoints: undefined,
+    crop: null,
+    resizeWidth: null,
+    resizeHeight: null,
+    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
+  });
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleFlipVertical = async () => {
-  await imageStore.flipVertical();
+const handleHueSaturationApply = async (hue: number, saturation: number, gamma: number) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: {
+      brightness: 100,
+      contrast: 100,
+      saturation,
+      blur: 0,
+      hue,
+      gamma: gamma / 100,
+      toneCurvePoints: undefined,
+    },
+  });
+  showHueSaturationModal.value = false;
 };
 
-// フィルターハンドラ
-const applyFiltersRealtime = () => {
-  applyRealtimeOps();
+// トーンカーブハンドラ
+const handleToneCurvePreview = async (points: ToneCurvePoint[]) => {
+  await imageStore.applyFiltersRealtime({
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    blur: 0,
+    hue: 0,
+    gamma: 1,
+    toneCurvePoints: points,
+    crop: null,
+    resizeWidth: null,
+    resizeHeight: null,
+    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
+  });
+  modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleFiltersCommit = () => {
-  imageStore.commitOpsHistory();
+const handleToneCurveApply = async (points: ToneCurvePoint[]) => {
+  await imageStore.applyOperation({
+    type: 'filters',
+    params: {
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      blur: 0,
+      hue: 0,
+      gamma: 1,
+      toneCurvePoints: points,
+    },
+  });
+  showToneCurveModal.value = false;
+  toneCurvePoints.value = [
+    { x: 0, y: 0 },
+    { x: 0.25, y: 0.25 },
+    { x: 0.5, y: 0.5 },
+    { x: 0.75, y: 0.75 },
+    { x: 1, y: 1 },
+  ];
 };
 
+const handleToneCurveCancel = async () => {
+  showToneCurveModal.value = false;
+  // ポイントをデフォルトにリセット
+  toneCurvePoints.value = [
+    { x: 0, y: 0 },
+    { x: 0.25, y: 0.25 },
+    { x: 0.5, y: 0.5 },
+    { x: 0.75, y: 0.75 },
+    { x: 1, y: 1 },
+  ];
+  // 履歴から再レンダリングして元の状態に戻す
+  await imageStore.renderFromHistory();
+};
+
+// ウォーターマークハンドラ
+interface WatermarkParams {
+  type: 'none' | 'text' | 'image';
+  text: string;
+  fontSize: number;
+  color: string;
+  opacity: number;
+  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom';
+  offsetX: number;
+  offsetY: number;
+  imageDataURL: string;
+  scale: number;
+  mode: 'single' | 'pattern';
+  rotation: number;
+  spacingX: number;
+  spacingY: number;
+}
+
+const handleWatermarkPreview = async (params: WatermarkParams) => {
+  await imageStore.applyFiltersRealtime({
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    blur: 0,
+    hue: 0,
+    gamma: 1,
+    toneCurvePoints: undefined,
+    crop: null,
+    resizeWidth: null,
+    resizeHeight: null,
+    watermark: {
+      ...params,
+      anchorX: null,
+      anchorY: null,
+    },
+  });
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleWatermarkApply = async (params: WatermarkParams) => {
+  await imageStore.applyOperation({
+    type: 'watermark',
+    params: {
+      watermark: {
+        ...params,
+        anchorX: null,
+        anchorY: null,
+      },
+    },
+  });
+  showWatermarkModal.value = false;
+};
+
+// グレースケール・セピア
 const handleGrayscale = async () => {
-  await imageStore.grayscale();
+  await imageStore.applyOperation({
+    type: 'grayscale',
+    params: {},
+  });
 };
 
 const handleSepia = async () => {
-  await imageStore.sepia();
-};
-
-const handleToneCurvePreview = (points: ToneCurvePoint[]) => {
-  toneCurvePoints.value = points;
-  applyRealtimeOps();
-};
-
-const handleToneCurveUpdate = (points: ToneCurvePoint[]) => {
-  toneCurvePoints.value = points;
-  applyRealtimeOps();
-};
-
-const handleToneCurveApply = (points: ToneCurvePoint[]) => {
-  toneCurvePoints.value = points;
-  applyRealtimeOps();
-  imageStore.commitOpsHistory();
-  showToneCurve.value = false;
-};
-
-const handleWatermarkImageSelect = async (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-  const dataURL = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Failed to read watermark image'));
-    reader.readAsDataURL(file);
-  });
-  watermarkImageDataURL.value = dataURL;
-  watermarkImageName.value = file.name;
-  watermarkType.value = 'image';
-  applyRealtimeOps();
-};
-
-const handleWatermarkReset = () => {
-  watermarkType.value = 'none';
-  watermarkText.value = 'Sample Watermark';
-  watermarkFontSize.value = 32;
-  watermarkColor.value = '#ffffff';
-  watermarkOpacity.value = 50;
-  watermarkPosition.value = 'bottom-right';
-  watermarkOffsetX.value = 24;
-  watermarkOffsetY.value = 24;
-  watermarkScale.value = 30;
-  watermarkImageDataURL.value = null;
-  watermarkImageName.value = '';
-  applyRealtimeOps();
-  imageStore.commitOpsHistory();
-};
-
-const handleWatermarkApply = () => {
-  applyRealtimeOps();
-  imageStore.commitOpsHistory();
-};
-
-const setWatermarkType = (type: 'none' | 'text' | 'image') => {
-  watermarkType.value = type;
-  applyRealtimeOps();
-};
-
-// 統合リアルタイムプレビュー
-const applyRealtimeOps = () => {
-  if (!imageStore.hasImage) return;
-  const shouldApplyCrop = !cropMode.value && (cropX.value > 0 || cropY.value > 0 || cropWidth.value !== imageStore.imageInfo?.width || cropHeight.value !== imageStore.imageInfo?.height);
-  imageStore.applyFiltersRealtime({
-    brightness: brightness.value,
-    contrast: contrast.value,
-    saturation: saturation.value,
-    blur: blurAmount.value,
-    hue: hue.value,
-    gamma: gamma.value / 100,
-    toneCurvePoints: toneCurvePoints.value,
-    crop: shouldApplyCrop ? { x: cropX.value, y: cropY.value, width: cropWidth.value, height: cropHeight.value } : null,
-    resizeWidth: resizeWidth.value !== imageStore.imageInfo?.width ? resizeWidth.value : null,
-    resizeHeight: resizeHeight.value !== imageStore.imageInfo?.height ? resizeHeight.value : null,
-    watermark: {
-      type: watermarkType.value,
-      text: watermarkText.value,
-      fontSize: watermarkFontSize.value,
-      color: watermarkColor.value,
-      opacity: watermarkOpacity.value / 100,
-      position: watermarkPosition.value,
-      offsetX: watermarkOffsetX.value,
-      offsetY: watermarkOffsetY.value,
-      imageDataURL: watermarkType.value === 'image' ? watermarkImageDataURL.value || '' : '',
-      scale: watermarkScale.value / 100,
-    },
+  await imageStore.applyOperation({
+    type: 'sepia',
+    params: {},
   });
 };
 
-// その他のハンドラ
-const handleDownload = () => {
-  imageStore.download('edited-image.jpg');
-};
-
-const syncUIFromOps = () => {
-  const current = imageStore.ops;
-  if (!current) return;
-  if (imageStore.imageInfo) {
-    resizeWidth.value = current.resizeWidth || imageStore.imageInfo.width;
-    resizeHeight.value = current.resizeHeight || imageStore.imageInfo.height;
-    scalePercent.value = imageStore.imageInfo.width
-      ? Math.round((resizeWidth.value / imageStore.imageInfo.width) * 100)
-      : 100;
-    if (current.crop) {
-      cropX.value = current.crop.x;
-      cropY.value = current.crop.y;
-      cropWidth.value = current.crop.width;
-      cropHeight.value = current.crop.height;
-    } else {
-      cropX.value = 0;
-      cropY.value = 0;
-      cropWidth.value = imageStore.imageInfo.width;
-      cropHeight.value = imageStore.imageInfo.height;
-    }
-  }
-  rotationDegrees.value = current.rotation ?? 0;
-  brightness.value = current.brightness ?? 100;
-  contrast.value = current.contrast ?? 100;
-  saturation.value = current.saturation ?? 100;
-  blurAmount.value = current.blur ?? 0;
-  hue.value = current.hue ?? 0;
-  gamma.value = Math.round((current.gamma ?? 1) * 100);
-  toneCurvePoints.value = current.toneCurvePoints ?? [
-    { x: 0, y: 0 },
-    { x: 0.33, y: 0.33 },
-    { x: 0.66, y: 0.66 },
-    { x: 1, y: 1 },
-  ];
-  if (current.watermark) {
-    watermarkType.value = current.watermark.type ?? 'none';
-    watermarkText.value = current.watermark.text ?? 'Sample Watermark';
-    watermarkFontSize.value = current.watermark.fontSize ?? 32;
-    watermarkColor.value = current.watermark.color ?? '#ffffff';
-    watermarkOpacity.value = Math.round((current.watermark.opacity ?? 0.5) * 100);
-    watermarkPosition.value = current.watermark.position ?? 'bottom-right';
-    watermarkOffsetX.value = current.watermark.offsetX ?? 24;
-    watermarkOffsetY.value = current.watermark.offsetY ?? 24;
-    watermarkScale.value = Math.round((current.watermark.scale ?? 0.3) * 100);
-    watermarkImageDataURL.value = current.watermark.imageDataURL || null;
-    watermarkImageName.value = current.watermark.imageDataURL ? 'watermark-image' : '';
-  }
-};
-
-const resetUIState = () => {
-  if (imageStore.imageInfo) {
-    resizeWidth.value = imageStore.imageInfo.width;
-    resizeHeight.value = imageStore.imageInfo.height;
-    scalePercent.value = 100;
-    cropX.value = 0;
-    cropY.value = 0;
-    cropWidth.value = imageStore.imageInfo.width;
-    cropHeight.value = imageStore.imageInfo.height;
-    cropSizePercent.value = 100;
-    cropAspect.value = 'free';
-  }
-  rotationDegrees.value = 0;
-  brightness.value = 100;
-  contrast.value = 100;
-  saturation.value = 100;
-  blurAmount.value = 0;
-  hue.value = 0;
-  gamma.value = 100;
-  toneCurvePoints.value = [
-    { x: 0, y: 0 },
-    { x: 0.33, y: 0.33 },
-    { x: 0.66, y: 0.66 },
-    { x: 1, y: 1 },
-  ];
-  watermarkType.value = 'none';
-  watermarkText.value = 'Sample Watermark';
-  watermarkFontSize.value = 32;
-  watermarkColor.value = '#ffffff';
-  watermarkOpacity.value = 50;
-  watermarkPosition.value = 'bottom-right';
-  watermarkOffsetX.value = 24;
-  watermarkOffsetY.value = 24;
-  watermarkScale.value = 30;
-  watermarkImageDataURL.value = null;
-  watermarkImageName.value = '';
-};
-
-const handleResetOps = async () => {
-  await imageStore.resetOperations();
-  resetUIState();
-  syncUIFromOps();
-  activeTab.value = 'resize';
-};
-
-const handleClearImage = () => {
-  imageStore.reset();
-  resizeWidth.value = 0;
-  resizeHeight.value = 0;
-  scalePercent.value = 100;
-  cropX.value = 0;
-  cropY.value = 0;
-  cropWidth.value = 0;
-  cropHeight.value = 0;
-  cropSizePercent.value = 100;
-  cropAspect.value = 'free';
-  rotationDegrees.value = 0;
-  brightness.value = 100;
-  contrast.value = 100;
-  saturation.value = 100;
-  blurAmount.value = 0;
-  hue.value = 0;
-  gamma.value = 100;
-  toneCurvePoints.value = [
-    { x: 0, y: 0 },
-    { x: 0.33, y: 0.33 },
-    { x: 0.66, y: 0.66 },
-    { x: 1, y: 1 },
-  ];
-  watermarkType.value = 'none';
-  watermarkText.value = 'Sample Watermark';
-  watermarkFontSize.value = 32;
-  watermarkColor.value = '#ffffff';
-  watermarkOpacity.value = 50;
-  watermarkPosition.value = 'bottom-right';
-  watermarkOffsetX.value = 24;
-  watermarkOffsetY.value = 24;
-  watermarkScale.value = 30;
-  watermarkImageDataURL.value = null;
-  watermarkImageName.value = '';
-};
-
+// Undo/Redo
 const handleUndo = async () => {
   await imageStore.undo();
-  syncUIFromOps();
 };
 
 const handleRedo = async () => {
   await imageStore.redo();
-  syncUIFromOps();
 };
 
-// クロップタブが開かれた時に範囲を初期化
-watch(() => activeTab.value, (newTab) => {
-  if (newTab === 'crop' && imageStore.imageInfo) {
-    if (cropWidth.value === 0 || cropHeight.value === 0) {
-      cropX.value = 0;
-      cropY.value = 0;
-      cropWidth.value = imageStore.imageInfo.width;
-      cropHeight.value = imageStore.imageInfo.height;
+// キーボードショートカット
+const handleKeydown = (e: KeyboardEvent) => {
+  // モーダルが開いている場合はスキップ
+  const anyModalOpen = showResizeModal.value || showTransformModal.value || 
+    showBrightnessContrastModal.value || showHueSaturationModal.value || 
+    showWatermarkModal.value || showToneCurveModal.value || showCropModal.value;
+  
+  if (anyModalOpen) return;
+  
+  // Ctrl+Z: Undo
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    if (imageStore.canUndo) {
+      handleUndo();
     }
   }
-});
+  
+  // Ctrl+Y or Ctrl+Shift+Z: Redo
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'Z' || (e.key === 'z' && e.shiftKey)))) {
+    e.preventDefault();
+    if (imageStore.canRedo) {
+      handleRedo();
+    }
+  }
+  
+  // Ctrl+S: 名前を付けて保存
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    if (imageStore.hasImage) {
+      handleSaveAs();
+    }
+  }
+};
+
+// リセット
+const handleResetOps = async () => {
+  await imageStore.resetOperations();
+};
+
+// ダウンロード（デフォルト名）
+const handleDownload = () => {
+  imageStore.download('edited-image.jpg');
+};
+
+// 名前を付けて保存
+const handleSaveAs = async () => {
+  if (!imageStore.hasImage || !imageStore.processedDataURL) return;
+  
+  // File System Access API が利用可能かチェック
+  if ('showSaveFilePicker' in window) {
+    try {
+      const blob = await fetch(imageStore.processedDataURL).then(r => r.blob());
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: 'edited-image.jpg',
+        types: [
+          {
+            description: 'JPEG Image',
+            accept: { 'image/jpeg': ['.jpg', '.jpeg'] },
+          },
+          {
+            description: 'PNG Image',
+            accept: { 'image/png': ['.png'] },
+          },
+          {
+            description: 'WebP Image',
+            accept: { 'image/webp': ['.webp'] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } catch (err: any) {
+      // ユーザーがキャンセルした場合は何もしない
+      if (err.name !== 'AbortError') {
+        console.error('Save failed:', err);
+      }
+    }
+  } else {
+    // フォールバック: プロンプトでファイル名を入力
+    const filename = prompt('ファイル名を入力してください', 'edited-image.jpg');
+    if (filename) {
+      imageStore.download(filename);
+    }
+  }
+};
 
 onMounted(() => {
   imageStore.initProcessor();
+  window.addEventListener('keydown', handleKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
 });
 </script>
 
 <style scoped>
 .page-editor {
-  max-width: 1800px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 .page-header {
-  margin-bottom: var(--space-24);
+  margin-bottom: var(--space-16);
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0 0 var(--space-8) 0;
 }
 
 .page-description {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   margin: 0;
 }
 
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
 .editor__container {
-  display: grid;
-  grid-template-columns: 1fr 400px;
+  display: flex;
   gap: var(--space-24);
-  min-height: 720px;
 }
 
 .editor__preview-section {
+  flex: 1;
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   padding: var(--space-24);
-  overflow: hidden;
+  min-height: 600px;
   display: flex;
   flex-direction: column;
-}
-
-.editor__preview-section :deep(.image-preview) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.editor__preview-section :deep(.image-preview__container) {
-  flex: 1;
 }
 
 .editor__preview-header {
@@ -1071,9 +600,28 @@ onMounted(() => {
   margin: 0;
 }
 
-.editor__preview-actions {
+.editor__preview-info {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.editor__preview-content {
+  flex: 1;
   display: flex;
-  gap: var(--space-8);
+  flex-direction: column;
+}
+
+.editor__preview-content :deep(.image-preview) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor__preview-content :deep(.image-preview__container) {
+  flex: 1;
 }
 
 .editor__upload-hint {
@@ -1083,6 +631,7 @@ onMounted(() => {
   justify-content: center;
   gap: var(--space-16);
   height: 100%;
+  flex: 1;
 }
 
 .hint {
@@ -1090,72 +639,13 @@ onMounted(() => {
   font-size: var(--font-size-sm);
 }
 
-.editor__sidebar {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--space-24);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-}
-
-.editor__tabs {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-8);
-  flex-shrink: 0;
-}
-
-.editor__tab {
-  padding: var(--space-12);
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast) ease-out;
-}
-
-.editor__tab:hover {
-  background: var(--color-background);
-  color: var(--color-text-primary);
-}
-
-.editor__tab--active {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.editor__tools {
-  flex: 1;
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-12);
-}
-
-.filter-actions {
-  margin-top: var(--space-12);
-}
-
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .editor__container {
-    grid-template-columns: 1fr;
-    height: auto;
+    flex-direction: column;
   }
-
-  .editor__sidebar {
-    order: -1;
-  }
-
-  .editor__tabs {
-    grid-template-columns: repeat(4, 1fr);
+  
+  .editor__preview-section {
+    min-height: 400px;
   }
 }
 </style>

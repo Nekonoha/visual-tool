@@ -506,6 +506,15 @@
   padding: 16px;
 }
 
+.modal-backdrop--transparent {
+  background: transparent;
+  pointer-events: none;
+}
+
+.modal-backdrop--transparent .modal {
+  pointer-events: auto;
+}
+
 .modal {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
@@ -908,12 +917,24 @@
   align-items: center;
   justify-content: center;
   background: var(--color-surface);
+  overflow: auto;
+}
+
+.interactive-crop__wrapper {
+  position: relative;
+  flex-shrink: 0;
+  background-image:
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: #f5f5f5;
 }
 
 .interactive-crop__image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  display: block;
   user-select: none;
   pointer-events: none;
 }

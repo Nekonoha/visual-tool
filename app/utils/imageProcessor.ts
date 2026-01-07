@@ -383,6 +383,11 @@ export class ImageProcessor {
       scale?: number; // 0-1
       anchorX?: number | null;
       anchorY?: number | null;
+      // 新しいオプション
+      mode?: 'single' | 'pattern'; // 単一 or パターン
+      rotation?: number; // 回転角度（度）
+      spacingX?: number; // パターン時のX方向間隔
+      spacingY?: number; // パターン時のY方向間隔
     };
   }): Promise<Blob> {
     if (!this.originalImage) throw new Error('No image loaded');
@@ -532,6 +537,11 @@ export class ImageProcessor {
         const position = watermark.position ?? 'bottom-right';
         const offsetX = watermark.offsetX ?? 24;
         const offsetY = watermark.offsetY ?? 24;
+        const mode = watermark.mode ?? 'single';
+        const rotation = watermark.rotation ?? 0;
+        const spacingX = watermark.spacingX ?? 100;
+        const spacingY = watermark.spacingY ?? 100;
+        const rotRad = (rotation * Math.PI) / 180;
 
         const computePosition = (w: number, h: number, anchor?: { x: number | null; y: number | null }) => {
           const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
@@ -561,6 +571,25 @@ export class ImageProcessor {
         this.ctx.save();
         this.ctx.globalAlpha = opacity;
 
+        // ウォーターマーク描画関数（テキスト用）
+        const drawTextWatermark = (cx: number, cy: number, w: number, h: number) => {
+          this.ctx.save();
+          this.ctx.translate(cx + w / 2, cy + h / 2);
+          this.ctx.rotate(rotRad);
+          this.ctx.translate(-(w / 2), -(h / 2));
+          this.ctx.fillText(watermark.text!, 0, 0);
+          this.ctx.restore();
+        };
+
+        // ウォーターマーク描画関数（画像用）
+        const drawImageWatermark = (cx: number, cy: number, img: HTMLImageElement, w: number, h: number) => {
+          this.ctx.save();
+          this.ctx.translate(cx + w / 2, cy + h / 2);
+          this.ctx.rotate(rotRad);
+          this.ctx.drawImage(img, -w / 2, -h / 2, w, h);
+          this.ctx.restore();
+        };
+
         if (watermark.type === 'text' && watermark.text) {
           const fontSize = Math.max(8, watermark.fontSize ?? 32);
           this.ctx.font = `${fontSize}px 'Segoe UI', 'Helvetica Neue', Arial, sans-serif`;
@@ -573,26 +602,67 @@ export class ImageProcessor {
           const metrics = this.ctx.measureText(watermark.text);
           const textWidth = metrics.width;
           const textHeight = (metrics.actualBoundingBoxAscent ?? fontSize) + (metrics.actualBoundingBoxDescent ?? 0);
-          const { x, y } = computePosition(textWidth, textHeight, {
-            x: watermark.anchorX ?? null,
-            y: watermark.anchorY ?? null,
-          });
-          this.ctx.fillText(watermark.text, x, y);
+
+          if (mode === 'pattern') {
+            // パターンモード: 画面全体にタイル状に配置
+            const stepX = textWidth + spacingX;
+            const stepY = textHeight + spacingY;
+            // 回転時は範囲を広げてカバー
+            const diagonal = Math.sqrt(finalW * finalW + finalH * finalH);
+            const startX = -diagonal / 2;
+            const startY = -diagonal / 2;
+            const endX = finalW + diagonal / 2;
+            const endY = finalH + diagonal / 2;
+
+            for (let y = startY; y < endY; y += stepY) {
+              for (let x = startX; x < endX; x += stepX) {
+                drawTextWatermark(x, y, textWidth, textHeight);
+              }
+            }
+          } else {
+            // 単一モード
+            const { x, y } = computePosition(textWidth, textHeight, {
+              x: watermark.anchorX ?? null,
+              y: watermark.anchorY ?? null,
+            });
+            drawTextWatermark(x, y, textWidth, textHeight);
+          }
         } else if (watermark.type === 'image' && watermark.imageDataURL) {
           try {
             const img = await this.loadWatermarkImage(watermark.imageDataURL);
             const scale = Math.min(2, Math.max(0.05, watermark.scale ?? 0.3));
             const drawW = img.width * scale;
             const drawH = img.height * scale;
-            const { x, y } = computePosition(drawW, drawH, {
-              x: watermark.anchorX ?? null,
-              y: watermark.anchorY ?? null,
-            });
+
+            // 画像用のシャドウ設定
             this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
             this.ctx.shadowBlur = 4;
             this.ctx.shadowOffsetX = 1;
             this.ctx.shadowOffsetY = 1;
-            this.ctx.drawImage(img, x, y, drawW, drawH);
+
+            if (mode === 'pattern') {
+              // パターンモード
+              const stepX = drawW + spacingX;
+              const stepY = drawH + spacingY;
+              const diagonal = Math.sqrt(finalW * finalW + finalH * finalH);
+              const startX = -diagonal / 2;
+              const startY = -diagonal / 2;
+              const endX = finalW + diagonal / 2;
+              const endY = finalH + diagonal / 2;
+
+              for (let y = startY; y < endY; y += stepY) {
+                for (let x = startX; x < endX; x += stepX) {
+                  drawImageWatermark(x, y, img, drawW, drawH);
+                }
+              }
+            } else {
+              // 単一モード
+              const { x, y } = computePosition(drawW, drawH, {
+                x: watermark.anchorX ?? null,
+                y: watermark.anchorY ?? null,
+              });
+              drawImageWatermark(x, y, img, drawW, drawH);
+            }
           } catch (err) {
             console.error(err);
           }
@@ -654,10 +724,22 @@ export class ImageProcessor {
   }
 
   /**
-   * 画像情報を取得
+   * 画像情報を取得（処理後のサイズ）
    */
   getImageInfo() {
     if (this.lastRenderInfo) return this.lastRenderInfo;
+    if (!this.originalImage) return null;
+    return {
+      width: this.originalImage.width,
+      height: this.originalImage.height,
+      aspectRatio: this.originalImage.width / this.originalImage.height,
+    };
+  }
+
+  /**
+   * オリジナル画像の情報を取得
+   */
+  getOriginalImageInfo() {
     if (!this.originalImage) return null;
     return {
       width: this.originalImage.width,

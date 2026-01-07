@@ -16,16 +16,27 @@ export interface ImageState {
   error: string | null;
 }
 
+// 適用済み操作の型定義
+export interface AppliedOperation {
+  type: 'resize' | 'crop' | 'transform' | 'filters' | 'watermark' | 'grayscale' | 'sepia';
+  params: any;
+}
+
 export const useImageStore = defineStore('image', () => {
   // State
   const originalFile = ref<File | null>(null);
-  const originalDataURL = ref<string | null>(null);
+  const originalDataURL = ref<string | null>(null);  // 最初にロードした画像（不変）
   const processedDataURL = ref<string | null>(null);
   const imageInfo = ref<ImageState['imageInfo']>(null);
   const isProcessing = ref(false);
   const error = ref<string | null>(null);
   const processor = ref<ImageProcessor | null>(null);
-  // 操作状態（合成描画用）
+  
+  // 適用済み操作のキュー（履歴）
+  const appliedOps = ref<AppliedOperation[]>([]);
+  const historyIndex = ref(-1);  // 現在の履歴位置（-1 = 何も適用されていない）
+  
+  // 現在編集中の操作パラメータ（プレビュー用、まだ適用されていない）
   const defaultOps = () => ({
     rotation: 0,
     flipH: false,
@@ -41,8 +52,9 @@ export const useImageStore = defineStore('image', () => {
     gamma: 1,
     toneCurvePoints: [
       { x: 0, y: 0 },
-      { x: 0.33, y: 0.33 },
-      { x: 0.66, y: 0.66 },
+      { x: 0.25, y: 0.25 },
+      { x: 0.5, y: 0.5 },
+      { x: 0.75, y: 0.75 },
       { x: 1, y: 1 },
     ] as Array<{ x: number; y: number }>,
     grayscale: false,
@@ -60,37 +72,85 @@ export const useImageStore = defineStore('image', () => {
       scale: 0.3,
       anchorX: null as number | null,
       anchorY: null as number | null,
+      mode: 'single' as 'single' | 'pattern',
+      rotation: 0,
+      spacingX: 100,
+      spacingY: 100,
     },
   });
 
   const ops = ref(defaultOps());
-  let pendingSnapshot: ReturnType<typeof defaultOps> | null = null;
-
-  // 履歴スタック（Undo/Redo）: opsのスナップショットを保持
-  const historyPast = ref<Array<ReturnType<typeof defaultOps>>>([]);
-  const historyFuture = ref<Array<ReturnType<typeof defaultOps>>>([]);
-
-  const snapshotOps = () => {
-    historyPast.value.push({ ...ops.value });
-    historyFuture.value = [];
-  };
-
-  const pushHistoryIfChanged = () => {
-    const last = historyPast.value[historyPast.value.length - 1];
-    const current = ops.value;
-    if (!last || JSON.stringify(last) !== JSON.stringify(current)) {
-      snapshotOps();
-    }
-  };
 
   let renderTimer: number | null = null;
-  const scheduleRender = () => {
-    if (!processor.value) return;
-    if (renderTimer) {
-      clearTimeout(renderTimer);
-      renderTimer = null;
+  let renderPromiseResolve: (() => void) | null = null;
+  
+  const scheduleRender = (): Promise<void> => {
+    return new Promise((resolve) => {
+      if (!processor.value) {
+        resolve();
+        return;
+      }
+      if (renderTimer) {
+        clearTimeout(renderTimer);
+        renderTimer = null;
+      }
+      // 前の待機中のresolveがあれば解決
+      if (renderPromiseResolve) {
+        renderPromiseResolve();
+      }
+      renderPromiseResolve = resolve;
+      renderTimer = window.setTimeout(async () => {
+        await renderNow();
+        if (renderPromiseResolve) {
+          renderPromiseResolve();
+          renderPromiseResolve = null;
+        }
+      }, 16); // ~60fps デバウンス
+    });
+  };
+
+  // 適用済み操作を順番に適用してopsを構築
+  const buildOpsFromHistory = (upToIndex: number): ReturnType<typeof defaultOps> => {
+    const result = defaultOps();
+    for (let i = 0; i <= upToIndex && i < appliedOps.value.length; i++) {
+      const op = appliedOps.value[i];
+      if (!op) continue;
+      switch (op.type) {
+        case 'resize':
+          result.resizeWidth = op.params.width;
+          result.resizeHeight = op.params.height;
+          break;
+        case 'crop':
+          result.crop = op.params.crop;
+          break;
+        case 'transform':
+          result.rotation = op.params.rotation;
+          result.flipH = op.params.flipH;
+          result.flipV = op.params.flipV;
+          break;
+        case 'filters':
+          result.brightness = op.params.brightness ?? 100;
+          result.contrast = op.params.contrast ?? 100;
+          result.saturation = op.params.saturation ?? 100;
+          result.blur = op.params.blur ?? 0;
+          result.hue = op.params.hue ?? 0;
+          result.gamma = op.params.gamma ?? 1;
+          result.toneCurvePoints = op.params.toneCurvePoints ?? result.toneCurvePoints;
+          break;
+        case 'watermark':
+          result.watermark = op.params.watermark;
+          break;
+        case 'grayscale':
+          result.grayscale = true;
+          result.sepia = false;
+          break;
+        case 'sepia':
+          result.sepia = true;
+          result.grayscale = false;
+          break;
+      }
     }
-    renderTimer = window.setTimeout(renderNow, 16); // ~60fps デバウンス
+    return result;
   };
 
   const renderNow = async () => {
@@ -107,14 +167,39 @@ export const useImageStore = defineStore('image', () => {
     }
   };
 
+  // 履歴からレンダリング（undo/redo時に使用）
+  const renderFromHistory = async () => {
+    if (!processor.value || !originalDataURL.value) return;
+    try {
+      isProcessing.value = true;
+      // 元画像を再読み込み
+      await processor.value.loadImageFromDataURL(originalDataURL.value);
+      // 適用済み操作を構築
+      const historyOps = buildOpsFromHistory(historyIndex.value);
+      // opsも履歴から復元（キャンセル時などに必要）
+      ops.value = historyOps;
+      const blob = await processor.value.applyOperations(historyOps);
+      processedDataURL.value = URL.createObjectURL(blob);
+      imageInfo.value = processor.value.getImageInfo();
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Render failed';
+    } finally {
+      isProcessing.value = false;
+    }
+  };
+
   // Computed
   const hasImage = computed(() => !!originalFile.value);
   const imageSize = computed(() => {
     if (!imageInfo.value) return '0 × 0';
     return `${imageInfo.value.width} × ${imageInfo.value.height}`;
   });
-  const canUndo = computed(() => historyPast.value.length > 0);
-  const canRedo = computed(() => historyFuture.value.length > 0);
+  const originalImageInfo = computed(() => {
+    if (!processor.value) return null;
+    return processor.value.getOriginalImageInfo();
+  });
+  const canUndo = computed(() => historyIndex.value >= 0);
+  const canRedo = computed(() => historyIndex.value < appliedOps.value.length - 1);
 
   // Actions
   const initProcessor = () => {
@@ -151,8 +236,8 @@ export const useImageStore = defineStore('image', () => {
       processedDataURL.value = dataURL;
       
       // 新規ロード時は履歴をクリア
-      historyPast.value = [];
-      historyFuture.value = [];
+      appliedOps.value = [];
+      historyIndex.value = -1;
       
       // 操作状態をリセット
       ops.value = defaultOps();
@@ -171,7 +256,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.resizeWidth = width;
     ops.value.resizeHeight = height;
     scheduleRender();
@@ -182,7 +266,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     const ratio = Math.min(maxWidth / imageInfo.value.width, maxHeight / imageInfo.value.height);
     ops.value.resizeWidth = Math.round(imageInfo.value.width * ratio);
     ops.value.resizeHeight = Math.round(imageInfo.value.height * ratio);
@@ -198,7 +281,6 @@ export const useImageStore = defineStore('image', () => {
     const h = Math.max(1, Math.min(height, imageInfo.value.height));
     const nx = Math.max(0, Math.min(x, imageInfo.value.width - w));
     const ny = Math.max(0, Math.min(y, imageInfo.value.height - h));
-    pushHistoryIfChanged();
     ops.value.crop = { x: nx, y: ny, width: w, height: h };
     scheduleRender();
   };
@@ -208,7 +290,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.crop = null;
     scheduleRender();
   };
@@ -218,7 +299,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    if (!pendingSnapshot) pendingSnapshot = { ...ops.value };
     ops.value.rotation = degrees;
     scheduleRender();
   };
@@ -228,7 +308,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.flipH = !ops.value.flipH;
     scheduleRender();
   };
@@ -238,7 +317,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.flipV = !ops.value.flipV;
     scheduleRender();
   };
@@ -275,7 +353,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.grayscale = true;
     ops.value.sepia = false;
     scheduleRender();
@@ -286,7 +363,6 @@ export const useImageStore = defineStore('image', () => {
       error.value = 'No image loaded';
       return;
     }
-    pushHistoryIfChanged();
     ops.value.sepia = true;
     ops.value.grayscale = false;
     scheduleRender();
@@ -315,13 +391,12 @@ export const useImageStore = defineStore('image', () => {
     resizeWidth?: number | null;
     resizeHeight?: number | null;
     watermark?: typeof ops.value.watermark;
-  }) => {
+  }): Promise<void> => {
     if (!processor.value) {
       error.value = 'No image loaded';
       return;
     }
-    // 連続ドラッグ中は最初の変化前の状態を保持しておき、リリース時に履歴へ積む
-    if (!pendingSnapshot) pendingSnapshot = { ...ops.value };
+    // リアルタイムプレビュー用
     if (typeof opts.brightness === 'number') ops.value.brightness = opts.brightness;
     if (typeof opts.contrast === 'number') ops.value.contrast = opts.contrast;
     if (typeof opts.saturation === 'number') ops.value.saturation = opts.saturation;
@@ -335,30 +410,40 @@ export const useImageStore = defineStore('image', () => {
     if (opts.resizeWidth !== undefined) ops.value.resizeWidth = opts.resizeWidth;
     if (opts.resizeHeight !== undefined) ops.value.resizeHeight = opts.resizeHeight;
     if (opts.watermark !== undefined) ops.value.watermark = opts.watermark;
-    scheduleRender();
+    await scheduleRender();
   };
 
-  const commitOpsHistory = () => {
-    if (pendingSnapshot) {
-      const changed = JSON.stringify(pendingSnapshot) !== JSON.stringify(ops.value);
-      if (changed) {
-        historyPast.value.push({ ...pendingSnapshot });
-        historyFuture.value = [];
-      }
-      pendingSnapshot = null;
-      return;
+  /**
+   * 操作を適用（履歴に追加）
+   */
+  const applyOperation = async (operation: AppliedOperation) => {
+    if (!processor.value || !originalDataURL.value) return;
+    
+    // 現在位置より先の履歴を削除（新しい操作を追加するため）
+    if (historyIndex.value < appliedOps.value.length - 1) {
+      appliedOps.value = appliedOps.value.slice(0, historyIndex.value + 1);
     }
-    pushHistoryIfChanged();
+    
+    // 新しい操作を追加
+    appliedOps.value.push(operation);
+    historyIndex.value = appliedOps.value.length - 1;
+    
+    // 履歴からレンダリング
+    await renderFromHistory();
   };
 
   const undo = async () => {
     try {
       if (!canUndo.value) return;
       if (!processor.value) throw new Error('Processor not initialized');
-      const prevOps = historyPast.value.pop() as ReturnType<typeof defaultOps>;
-      historyFuture.value.push({ ...ops.value });
-      ops.value = { ...prevOps };
-      await renderNow();
+      
+      historyIndex.value--;
+      
+      // UIのopsをリセット
+      ops.value = defaultOps();
+      
+      // 履歴からレンダリング
+      await renderFromHistory();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Undo failed';
     }
@@ -368,10 +453,14 @@ export const useImageStore = defineStore('image', () => {
     try {
       if (!canRedo.value) return;
       if (!processor.value) throw new Error('Processor not initialized');
-      const nextOps = historyFuture.value.pop() as ReturnType<typeof defaultOps>;
-      historyPast.value.push({ ...ops.value });
-      ops.value = { ...nextOps };
-      await renderNow();
+      
+      historyIndex.value++;
+      
+      // UIのopsをリセット
+      ops.value = defaultOps();
+      
+      // 履歴からレンダリング
+      await renderFromHistory();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Redo failed';
     }
@@ -388,9 +477,8 @@ export const useImageStore = defineStore('image', () => {
     processedDataURL.value = null;
     imageInfo.value = null;
     error.value = null;
-    historyPast.value = [];
-    historyFuture.value = [];
-    pendingSnapshot = null;
+    appliedOps.value = [];
+    historyIndex.value = -1;
     if (processor.value) {
       processor.value.reset();
     }
@@ -399,10 +487,9 @@ export const useImageStore = defineStore('image', () => {
 
   const resetOperations = async () => {
     if (!processor.value || !originalDataURL.value) return;
-    historyPast.value = [];
-    historyFuture.value = [];
+    appliedOps.value = [];
+    historyIndex.value = -1;
     ops.value = defaultOps();
-    pendingSnapshot = null;
     // 元画像に戻す
     await processor.value.loadImageFromDataURL(originalDataURL.value);
     processedDataURL.value = originalDataURL.value;
@@ -417,13 +504,14 @@ export const useImageStore = defineStore('image', () => {
     imageInfo,
     isProcessing,
     error,
-    historyPast,
-    historyFuture,
+    appliedOps,
+    historyIndex,
     ops,
 
     // Computed
     hasImage,
     imageSize,
+    originalImageInfo,
     canUndo,
     canRedo,
 
@@ -444,12 +532,14 @@ export const useImageStore = defineStore('image', () => {
     sepia,
     blur,
     applyFiltersRealtime,
+    applyOperation,
     download,
     undo,
     redo,
     reset,
-    commitOpsHistory,
     resetOperations,
     scheduleRender,
+    defaultOps,
+    renderFromHistory,
   };
 });

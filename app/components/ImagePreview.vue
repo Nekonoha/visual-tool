@@ -4,14 +4,15 @@
       <h3 class="image-preview__title">{{ title }}</h3>
       <span v-if="imageSize" class="image-preview__size">{{ imageSize }}</span>
       <div v-if="src" class="image-preview__controls">
-        <button type="button" class="image-preview__btn" @click="resetView">100%</button>
+        <button type="button" class="image-preview__btn" @click="fitToView" title="フィット">Fit</button>
+        <button type="button" class="image-preview__btn" @click="resetView" title="等倍表示">100%</button>
         <label class="image-preview__zoom">
           <span>{{ Math.round(zoom) }}%</span>
           <input
             v-model.number="zoom"
             type="range"
-            min="25"
-            max="300"
+            min="10"
+            max="400"
             step="5"
             @input="handleZoomInput"
           />
@@ -26,7 +27,7 @@
       @pointermove.prevent="onPanMove"
       @pointerup="endPan"
       @pointerleave="endPan"
-      @wheel="handleWheel"
+      @wheel.prevent="handleWheel"
     >
       <div
         v-if="src"
@@ -39,7 +40,6 @@
           :src="src"
           :alt="alt"
           class="image-preview__image"
-          :style="imageStyle"
           draggable="false"
           @load="handleImageLoad"
         />
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRefs } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, toRefs, watch } from 'vue';
 
 interface Props {
   src?: string | null;
@@ -86,47 +86,55 @@ const naturalSize = ref({ w: 0, h: 0 });
 const containerSize = ref({ w: 0, h: 0 });
 let resizeObserver: ResizeObserver | null = null;
 
+// マージン設定（コンテナ内での余白）
+const MARGIN = 24;
+
 const contentStyle = computed(() => ({
+  transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${zoom.value / 100})`,
+  transformOrigin: '0 0',
   width: `${naturalSize.value.w}px`,
   height: `${naturalSize.value.h}px`,
-  transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${zoom.value / 100})`,
-}));
-
-const imageStyle = computed(() => ({
-  left: '0px',
-  top: '0px',
 }));
 
 const updateContainerSize = () => {
   if (!containerRef.value) return;
   const rect = containerRef.value.getBoundingClientRect();
   containerSize.value = { w: rect.width, h: rect.height };
-  clampOffsets();
 };
 
-const clampOffsets = () => {
+// 画像を中央に配置するオフセットを計算
+const getCenteredOffset = () => {
   const scale = zoom.value / 100;
-  const w = naturalSize.value.w * scale;
-  const h = naturalSize.value.h * scale;
+  const scaledW = naturalSize.value.w * scale;
+  const scaledH = naturalSize.value.h * scale;
   const cw = containerSize.value.w;
   const ch = containerSize.value.h;
-  if (!w || !h) return;
-
-  // Clamp only when image exceeds container; otherwise respect current offset (user can move even if smaller)
-  if (w > cw) {
-    const minX = cw - w;
-    const maxX = 0;
-    offsetX.value = Math.min(maxX, Math.max(minX, offsetX.value));
-  }
-
-  if (h > ch) {
-    const minY = ch - h;
-    const maxY = 0;
-    offsetY.value = Math.min(maxY, Math.max(minY, offsetY.value));
-  }
+  return {
+    x: (cw - scaledW) / 2,
+    y: (ch - scaledH) / 2,
+  };
 };
 
-const clampZoom = (value: number) => Math.min(400, Math.max(5, value));
+// 画像がコンテナ外に出すぎないよう制限（ただし余裕を持たせる）
+const clampOffsets = () => {
+  const scale = zoom.value / 100;
+  const scaledW = naturalSize.value.w * scale;
+  const scaledH = naturalSize.value.h * scale;
+  const cw = containerSize.value.w;
+  const ch = containerSize.value.h;
+  if (!scaledW || !scaledH || !cw || !ch) return;
+
+  // 画像の少なくとも一部（MARGIN分）がコンテナ内に見えるよう制限
+  const minX = MARGIN - scaledW;
+  const maxX = cw - MARGIN;
+  const minY = MARGIN - scaledH;
+  const maxY = ch - MARGIN;
+
+  offsetX.value = Math.min(maxX, Math.max(minX, offsetX.value));
+  offsetY.value = Math.min(maxY, Math.max(minY, offsetY.value));
+};
+
+const clampZoom = (value: number) => Math.min(800, Math.max(5, value));
 
 const applyZoom = (nextZoom: number, cursor?: { x: number; y: number }) => {
   const newZoom = clampZoom(nextZoom);
@@ -137,49 +145,67 @@ const applyZoom = (nextZoom: number, cursor?: { x: number; y: number }) => {
     return;
   }
 
-  const target = contentRef.value ?? containerRef.value;
-  const rect = target.getBoundingClientRect();
-  const px = (cursor?.x ?? rect.left + rect.width / 2) - rect.left + target.scrollLeft;
-  const py = (cursor?.y ?? rect.top + rect.height / 2) - rect.top + target.scrollTop;
+  // カーソル位置を基準にズーム
+  const containerRect = containerRef.value.getBoundingClientRect();
+  const cx = cursor?.x ?? containerRect.left + containerRect.width / 2;
+  const cy = cursor?.y ?? containerRect.top + containerRect.height / 2;
+  
+  // コンテナ内でのカーソル位置
+  const px = cx - containerRect.left;
+  const py = cy - containerRect.top;
 
+  // 現在のスケールでの画像上の位置
   const imgX = (px - offsetX.value) / oldScale;
   const imgY = (py - offsetY.value) / oldScale;
 
+  // 新しいオフセットを計算（カーソル位置が同じ画像位置を指すように）
   offsetX.value = px - imgX * newScale;
   offsetY.value = py - imgY * newScale;
   zoom.value = newZoom;
   clampOffsets();
 };
 
+// 画像をコンテナにフィットさせる
+const fitToView = () => {
+  if (!naturalSize.value.w || !naturalSize.value.h) return;
+  const cw = containerSize.value.w - MARGIN * 2;
+  const ch = containerSize.value.h - MARGIN * 2;
+  const scaleX = cw / naturalSize.value.w;
+  const scaleY = ch / naturalSize.value.h;
+  const fitScale = Math.min(scaleX, scaleY, 1) * 100; // 100%以上にはしない
+  zoom.value = Math.max(10, fitScale);
+  const centered = getCenteredOffset();
+  offsetX.value = centered.x;
+  offsetY.value = centered.y;
+};
+
+// 100%表示で中央配置
 const resetView = () => {
   zoom.value = 100;
-  offsetX.value = 0;
-  offsetY.value = 0;
-  clampOffsets();
+  const centered = getCenteredOffset();
+  offsetX.value = centered.x;
+  offsetY.value = centered.y;
 };
 
 const handleZoomInput = () => {
   const clamped = clampZoom(zoom.value);
-  if (clamped <= 100) {
-    offsetX.value = 0;
-    offsetY.value = 0;
-  }
   zoom.value = clamped;
-  clampOffsets();
+  // ズーム変更時は中央を維持
+  const centered = getCenteredOffset();
+  offsetX.value = centered.x;
+  offsetY.value = centered.y;
 };
 
 const handleImageLoad = () => {
   if (!imageRef.value) return;
   naturalSize.value = { w: imageRef.value.naturalWidth, h: imageRef.value.naturalHeight };
   updateContainerSize();
-  resetView();
+  // 初期表示はフィット
+  fitToView();
 };
 
 const startPan = (e: PointerEvent) => {
-  if (!src.value || !contentRef.value || !containerRef.value) return;
-  const rect = contentRef.value.getBoundingClientRect();
-  const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
-  if (!inside) return;
+  if (!src.value || !containerRef.value) return;
   isPanning.value = true;
   panStart.value = { x: e.clientX, y: e.clientY, ox: offsetX.value, oy: offsetY.value };
   (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -187,9 +213,8 @@ const startPan = (e: PointerEvent) => {
 
 const onPanMove = (e: PointerEvent) => {
   if (!isPanning.value) return;
-  const scale = zoom.value / 100;
-  const dx = (e.clientX - panStart.value.x) / scale;
-  const dy = (e.clientY - panStart.value.y) / scale;
+  const dx = e.clientX - panStart.value.x;
+  const dy = e.clientY - panStart.value.y;
   offsetX.value = panStart.value.ox + dx;
   offsetY.value = panStart.value.oy + dy;
   clampOffsets();
@@ -207,32 +232,34 @@ const endPan = (e: PointerEvent) => {
 };
 
 const handleWheel = (e: WheelEvent) => {
-  if (!contentRef.value || !containerRef.value) return;
-  const rect = contentRef.value.getBoundingClientRect();
-  const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
-  if (!inside) return;
-  // Zoom with modifier key, otherwise pan if zoomed-in
-  if (e.ctrlKey || e.metaKey || e.shiftKey) {
-    e.preventDefault();
-    const delta = e.deltaY;
-    const step = delta > 0 ? -8 : 8;
-    applyZoom(zoom.value + step, { x: e.clientX, y: e.clientY });
-  } else if (zoom.value > 100) {
-    e.preventDefault();
-    const scale = zoom.value / 100;
-    offsetX.value -= e.deltaX / scale;
-    offsetY.value -= e.deltaY / scale;
-    clampOffsets();
-  }
+  if (!containerRef.value) return;
+  // ホイールで直接ズーム（修飾キー不要）
+  const delta = e.deltaY;
+  const step = delta > 0 ? -10 : 10;
+  applyZoom(zoom.value + step, { x: e.clientX, y: e.clientY });
 };
+
+// srcが変わったら初期化
+watch(src, () => {
+  if (src.value) {
+    // 画像が変わったらリセット（handleImageLoadで再計算される）
+  } else {
+    naturalSize.value = { w: 0, h: 0 };
+    zoom.value = 100;
+    offsetX.value = 0;
+    offsetY.value = 0;
+  }
+});
 
 onMounted(() => {
   if (window && 'ResizeObserver' in window) {
-    resizeObserver = new ResizeObserver(() => updateContainerSize());
+    resizeObserver = new ResizeObserver(() => {
+      updateContainerSize();
+      clampOffsets();
+    });
     if (containerRef.value) resizeObserver.observe(containerRef.value);
   }
   updateContainerSize();
-  clampOffsets();
 });
 
 onBeforeUnmount(() => {
@@ -295,14 +322,11 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 360px;
   background: repeating-conic-gradient(#f5f5f5 0% 25%, #eaeaea 0% 50%);
-  background-size: 24px 24px;
+  background-size: 16px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  touch-action: pinch-zoom;
+  overflow: hidden;
+  touch-action: none;
 }
 
 .image-preview__container.is-pannable {
@@ -314,21 +338,22 @@ onBeforeUnmount(() => {
 }
 
 .image-preview__content {
-  position: relative;
-  overflow: hidden;
-  transform-origin: top left;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 
 .image-preview__image {
-  max-width: none;
-  max-height: none;
-  position: absolute;
-  transform-origin: top left;
+  display: block;
+  width: 100%;
+  height: 100%;
   user-select: none;
-  transition: transform 0.05s linear;
 }
 
 .image-preview__placeholder {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   color: var(--color-text-tertiary);

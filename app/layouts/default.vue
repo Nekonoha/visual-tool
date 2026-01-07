@@ -57,18 +57,6 @@
             整理/リネーム
           </NuxtLink>
         </div>
-
-        <div class="app-sidebar__section">
-          <h3 class="app-sidebar__section-title">高度な機能</h3>
-          <div class="app-sidebar__link app-sidebar__link--disabled">
-            <i class="fa-solid fa-eraser app-sidebar__icon" aria-hidden="true"></i>
-            背景削除（近日）
-          </div>
-          <div class="app-sidebar__link app-sidebar__link--disabled">
-            <i class="fa-solid fa-water app-sidebar__icon" aria-hidden="true"></i>
-            ウォーターマーク（近日）
-          </div>
-        </div>
       </nav>
     </aside>
 

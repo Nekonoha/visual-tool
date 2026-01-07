@@ -1,57 +1,5 @@
-<template>
-  <div class="modal-backdrop" @click.self="close">
-    <div
-      class="modal"
-      :style="{ transform: `translate(-50%, -50%) translate(${modalPos.x}px, ${modalPos.y}px)` }"
-      @pointerdown.stop
-    >
-      <header class="modal__header" @pointerdown.prevent="onDragStart">
-        <h3 class="modal__title">トーンカーブ</h3>
-        <button class="modal__close" @click="close">✕</button>
-      </header>
-      <div class="modal__body">
-        <div class="curve" ref="svgRef">
-            <svg :width="width" :height="height" @pointerdown="onPointerDown">
-              <rect :width="width" :height="height" class="curve__bg" />
-              <path
-                class="curve__line"
-                :d="curvePath"
-              />
-              <circle
-                v-for="(p, idx) in pointsPx"
-                :key="idx"
-                class="curve__handle"
-                :cx="p.x"
-                :cy="p.y"
-                :data-idx="idx"
-                r="8"
-                @dblclick.stop.prevent="removePoint(idx)"
-              />
-            </svg>
-        </div>
-        <div class="curve__toolbar">
-          <div class="curve__presets">
-            <Button variant="outline" size="sm" @click="applyPreset('linear')">リニア</Button>
-            <Button variant="outline" size="sm" @click="applyPreset('contrast')">コントラスト+</Button>
-            <Button variant="outline" size="sm" @click="applyPreset('fade')">フェード</Button>
-            <Button variant="outline" size="sm" @click="applyPreset('inverse')">反転</Button>
-            <Button variant="outline" size="sm" @click="applyPreset('matte')">マット</Button>
-          </div>
-          <p class="curve__hint">グラフをクリックで点追加、ハンドルのダブルクリックで削除（端点は固定）</p>
-        </div>
-        <div class="modal__actions">
-          <Button variant="outline" size="sm" @click="resetDefault">デフォルト</Button>
-          <div class="modal__spacer"></div>
-          <Button variant="outline" size="sm" @click="close">キャンセル</Button>
-          <Button variant="primary" size="sm" @click="apply">適用</Button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import OperationModal from './OperationModal.vue';
 import Button from './Button.vue';
 
 interface Point {
@@ -59,25 +7,40 @@ interface Point {
   y: number; // 0..1
 }
 
-const props = defineProps<{ modelValue: Point[] }>();
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: Point[]): void;
-  (e: 'preview', value: Point[]): void;
-  (e: 'close'): void;
-  (e: 'apply', value: Point[]): void;
+const props = defineProps<{
+  visible: boolean;
+  modelValue: Point[];
+  previewSrc: string | null;
 }>();
 
-const width = 320;
-const height = 240;
+const emit = defineEmits<{
+  (e: 'update:visible', value: boolean): void;
+  (e: 'update:modelValue', value: Point[]): void;
+  (e: 'preview', value: Point[]): void;
+  (e: 'apply', value: Point[]): void;
+  (e: 'cancel'): void;
+}>();
+
+const width = 280;
+const height = 200;
 const padding = 16;
 
-const modalPos = ref({ x: 0, y: 0 });
-const draggingModal = ref(false);
-let dragStart = { x: 0, y: 0 };
-let modalStart = { x: 0, y: 0 };
-
-const points = ref<Point[]>([...props.modelValue]);
+// pointsは常にx座標でソート済みで保持（モーダル内ローカル状態）
+const points = ref<Point[]>([...props.modelValue].sort((a, b) => a.x - b.x));
 const dragging = ref<number | null>(null);
+const svgRef = ref<SVGElement | null>(null);
+
+// モーダルが開いたときにリセット
+watch(() => props.visible, (visible) => {
+  if (visible) {
+    points.value = [...props.modelValue].sort((a, b) => a.x - b.x);
+  }
+});
+
+// カーブ変更時にプレビューをリクエスト
+const requestPreview = () => {
+  emit('preview', [...points.value]);
+};
 
 const toPx = (p: Point) => ({
   x: padding + p.x * (width - padding * 2),
@@ -90,8 +53,7 @@ const toNorm = (xPx: number, yPx: number): Point => {
   return { x: nx, y: ny };
 };
 
-const sortedPoints = computed(() => [...points.value].sort((a, b) => a.x - b.x));
-const pointsPx = computed(() => sortedPoints.value.map(toPx));
+const pointsPx = computed(() => points.value.map(toPx));
 
 type Pt = { x: number; y: number };
 const toPathD = (pts: Pt[]) => {
@@ -117,61 +79,107 @@ const toPathD = (pts: Pt[]) => {
 
 const curvePath = computed(() => toPathD(pointsPx.value));
 
-const onPointerDown = (e: PointerEvent) => {
+// ハンドルを右クリックした時（削除）
+const onHandleRightClick = (idx: number) => {
+  if (idx === 0 || idx === points.value.length - 1) return;
+  const updated = points.value.filter((_, i) => i !== idx);
+  points.value = clampMidPoints(updated);
+  requestPreview();
+};
+
+// ハンドルをクリックした時（ドラッグ開始）
+const onHandlePointerDown = (e: PointerEvent, idx: number) => {
+  e.preventDefault();
+  dragging.value = idx;
+  const svg = svgRef.value as SVGElement;
+  if (svg) {
+    svg.setPointerCapture(e.pointerId);
+  }
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', (ev) => onPointerUp(ev), { once: true });
+};
+
+// SVG背景をクリックした時（新しい点を追加）
+const onSvgPointerDown = (e: PointerEvent) => {
   const target = e.target as HTMLElement;
-  const idxAttr = target.getAttribute('data-idx');
-  const svgRect = (svgRef.value as SVGElement).getBoundingClientRect();
+  if (target.classList.contains('curve__handle')) return;
+
+  const svg = svgRef.value as SVGElement;
+  if (!svg) return;
+  const svgRect = svg.getBoundingClientRect();
   const x = e.clientX - svgRect.left;
   const y = e.clientY - svgRect.top;
 
-  if (idxAttr !== null) {
-    const idx = Number(idxAttr);
-    dragging.value = idx;
-  } else {
-    const newPt = toNorm(x, y);
-    const pts = clampMidPoints([...points.value, newPt]);
-    points.value = pts;
-    emit('preview', [...points.value]);
-    emit('update:modelValue', [...points.value]);
-    const newIdx = points.value.findIndex((p) => Math.abs(p.x - newPt.x) < 0.005 && Math.abs(p.y - newPt.y) < 0.005);
-    dragging.value = newIdx >= 0 ? newIdx : null;
+  const newPt = toNorm(x, y);
+  const pts = clampMidPoints([...points.value, newPt]);
+  points.value = pts;
+  requestPreview();
+  const newIdx = points.value.findIndex((p) => Math.abs(p.x - newPt.x) < 0.005 && Math.abs(p.y - newPt.y) < 0.005);
+  dragging.value = newIdx >= 0 ? newIdx : null;
+  
+  if (svg) {
+    svg.setPointerCapture(e.pointerId);
   }
-
-  (e.currentTarget as SVGElement).setPointerCapture(e.pointerId);
   window.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerup', onPointerUp, { once: true });
+  window.addEventListener('pointerup', (ev) => onPointerUp(ev), { once: true });
 };
 
 const onPointerMove = (e: PointerEvent) => {
   if (dragging.value === null) return;
-  const svgRect = (svgRef.value as SVGElement).getBoundingClientRect();
+  const svg = svgRef.value as SVGElement;
+  if (!svg) return;
+  const svgRect = svg.getBoundingClientRect();
   const x = e.clientX - svgRect.left;
   const y = e.clientY - svgRect.top;
   const p = toNorm(x, y);
   const idx = dragging.value;
   const pts = clampMidPoints(updatePoint(points.value, idx, p));
   points.value = pts;
-  emit('preview', [...pts]);
-  emit('update:modelValue', [...pts]);
+  requestPreview();
 };
 
 const onPointerUp = (e: PointerEvent) => {
-  const svg = svgRef.value as SVGElement;
-  svg.releasePointerCapture(e.pointerId);
   window.removeEventListener('pointermove', onPointerMove);
+  const svg = svgRef.value as SVGElement;
+  if (svg && e.pointerId !== undefined) {
+    try {
+      svg.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  }
   dragging.value = null;
 };
 
-const resetDefault = () => {
+const clampMidPoints = (pts: Point[]) => {
+  const sorted = [...pts].sort((a, b) => a.x - b.x);
+  return sorted.map((p, idx, arr) => {
+    const isFirst = idx === 0;
+    const isLast = idx === arr.length - 1;
+    const prev = arr[idx - 1]?.x ?? 0;
+    const next = arr[idx + 1]?.x ?? 1;
+    return {
+      x: isFirst ? 0 : isLast ? 1 : Math.min(next - 0.01, Math.max(prev + 0.01, p.x)),
+      y: Math.min(1, Math.max(0, p.y)),
+    };
+  });
+};
+
+const updatePoint = (pts: Point[], idx: number, p: Point) => {
+  const cloned = [...pts];
+  cloned[idx] = p;
+  return cloned;
+};
+
+const handleReset = () => {
   points.value = [
     { x: 0, y: 0 },
-    { x: 0.25, y: 0.2 },
+    { x: 0.25, y: 0.25 },
     { x: 0.5, y: 0.5 },
-    { x: 0.75, y: 0.8 },
+    { x: 0.75, y: 0.75 },
     { x: 1, y: 1 },
   ];
-  emit('preview', [...points.value]);
-  emit('update:modelValue', [...points.value]);
+  requestPreview();
 };
 
 const applyPreset = (preset: 'linear' | 'contrast' | 'fade' | 'inverse' | 'matte') => {
@@ -208,67 +216,166 @@ const applyPreset = (preset: 'linear' | 'contrast' | 'fade' | 'inverse' | 'matte
     ],
   };
   points.value = clampMidPoints(presets[preset] ?? presets.linear);
-  emit('preview', [...points.value]);
-  emit('update:modelValue', [...points.value]);
+  requestPreview();
 };
 
-const apply = () => {
+// 適用ボタン
+const handleApply = () => {
   const sorted = [...points.value].sort((a, b) => a.x - b.x);
   emit('update:modelValue', sorted);
   emit('apply', sorted);
+  emit('update:visible', false);
 };
 
-const clampMidPoints = (pts: Point[]) => {
-  const sorted = [...pts].sort((a, b) => a.x - b.x);
-  return sorted.map((p, idx, arr) => {
-    const isFirst = idx === 0;
-    const isLast = idx === arr.length - 1;
-    const prev = arr[idx - 1]?.x ?? 0;
-    const next = arr[idx + 1]?.x ?? 1;
-    return {
-      x: isFirst ? 0 : isLast ? 1 : Math.min(next - 0.01, Math.max(prev + 0.01, p.x)),
-      y: Math.min(1, Math.max(0, p.y)),
-    };
-  });
+// キャンセルボタン
+const handleCancel = () => {
+  emit('cancel');
 };
-
-const updatePoint = (pts: Point[], idx: number, p: Point) => {
-  const cloned = [...pts];
-  cloned[idx] = p;
-  return cloned;
-};
-
-const removePoint = (idx: number) => {
-  if (idx === 0 || idx === points.value.length - 1) return; // keep endpoints
-  const updated = points.value.filter((_, i) => i !== idx);
-  points.value = clampMidPoints(updated);
-  emit('preview', [...points.value]);
-  emit('update:modelValue', [...points.value]);
-};
-
-const onDragStart = (e: PointerEvent) => {
-  draggingModal.value = true;
-  dragStart = { x: e.clientX, y: e.clientY };
-  modalStart = { ...modalPos.value };
-  window.addEventListener('pointermove', onDragMove);
-  window.addEventListener('pointerup', onDragEnd, { once: true });
-};
-
-const onDragMove = (e: PointerEvent) => {
-  if (!draggingModal.value) return;
-  modalPos.value = {
-    x: modalStart.x + (e.clientX - dragStart.x),
-    y: modalStart.y + (e.clientY - dragStart.y),
-  };
-};
-
-const onDragEnd = () => {
-  draggingModal.value = false;
-  window.removeEventListener('pointermove', onDragMove);
-};
-
-const close = () => emit('close');
-
-const svgRef = ref<SVGElement | null>(null);
 </script>
 
+<template>
+  <OperationModal
+    :visible="visible"
+    title="トーンカーブ"
+    width="650px"
+    min-width="500px"
+    min-height="350px"
+    resizable
+    show-reset
+    @update:visible="emit('update:visible', $event)"
+    @apply="handleApply"
+    @cancel="handleCancel"
+    @reset="handleReset"
+  >
+    <div class="tonecurve-content">
+      <!-- プレビューエリア -->
+      <div class="preview-section">
+        <div class="preview-container">
+          <img v-if="previewSrc" :src="previewSrc" class="preview-image" />
+          <div v-else class="preview-placeholder">プレビュー</div>
+        </div>
+      </div>
+      
+      <!-- カーブエディタ -->
+      <div class="curve-section">
+        <div class="curve" ref="svgRef">
+          <svg :width="width" :height="height" @pointerdown="onSvgPointerDown">
+            <rect :width="width" :height="height" class="curve__bg" />
+            <path class="curve__line" :d="curvePath" />
+            <circle
+              v-for="(p, idx) in pointsPx"
+              :key="idx"
+              class="curve__handle"
+              :cx="p.x"
+              :cy="p.y"
+              :data-idx="idx"
+              r="8"
+              @pointerdown.stop="onHandlePointerDown($event, idx)"
+              @contextmenu.stop.prevent="onHandleRightClick(idx)"
+            />
+          </svg>
+        </div>
+        <div class="curve__toolbar">
+          <div class="curve__presets">
+            <Button variant="outline" size="sm" @click="applyPreset('linear')">リニア</Button>
+            <Button variant="outline" size="sm" @click="applyPreset('contrast')">コントラスト+</Button>
+            <Button variant="outline" size="sm" @click="applyPreset('fade')">フェード</Button>
+            <Button variant="outline" size="sm" @click="applyPreset('inverse')">反転</Button>
+            <Button variant="outline" size="sm" @click="applyPreset('matte')">マット</Button>
+          </div>
+          <p class="curve__hint">クリックで点追加、右クリックで削除</p>
+        </div>
+      </div>
+    </div>
+  </OperationModal>
+</template>
+
+<style scoped>
+.tonecurve-content {
+  display: flex;
+  gap: 20px;
+  min-height: 0;
+  flex: 1;
+}
+
+.preview-section {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-container {
+  background: var(--checkerboard-bg);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.preview-placeholder {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.curve-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.curve {
+  background: var(--color-surface-muted);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.curve__bg {
+  fill: var(--color-surface-muted);
+}
+
+.curve__line {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.curve__handle {
+  fill: var(--color-primary);
+  stroke: white;
+  stroke-width: 2;
+  cursor: grab;
+}
+
+.curve__handle:active {
+  cursor: grabbing;
+}
+
+.curve__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.curve__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.curve__hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+</style>
