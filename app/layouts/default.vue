@@ -3,12 +3,19 @@
     <header class="app-header">
       <div class="app-header__container">
         <NuxtLink to="/" class="app-header__logo">
-          <svg class="app-header__logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
+          <svg class="app-header__logo-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M8 20 L32 8 L56 20 L56 48 L32 56 L8 48 Z" fill="#6366F1" />
+            <path d="M8 20 L32 32 L56 20 L32 8 Z" fill="#818CF8" />
+            <path d="M32 32 L56 20 L56 48 L32 56 Z" fill="#4F46E5" />
+            <path d="M8 20 L32 32 L32 56 L8 48 Z" fill="#6366F1" />
+            <g transform="translate(18, 14)">
+              <rect x="0" y="0" width="28" height="22" rx="3" fill="#fff" />
+              <rect x="2" y="2" width="24" height="18" rx="2" fill="#E0E7FF" />
+              <path d="M2 16 L10 10 L16 14 L24 6 L26 8 L26 20 L2 20 Z" fill="#818CF8" opacity="0.6"/>
+              <circle cx="20" cy="8" r="4" fill="#FBBF24" />
+            </g>
           </svg>
-          <span class="app-header__logo-text">Visual Tool</span>
+          <span class="app-header__logo-text">imgcrate</span>
         </NuxtLink>
 
         <nav class="app-header__nav">
@@ -28,6 +35,34 @@
             <i class="fa-solid fa-folder-tree app-header__nav-icon" aria-hidden="true"></i>
             整理/リネーム
           </NuxtLink>
+          
+          <!-- テーマ切替ボタン -->
+          <div class="app-header__theme-toggle">
+            <button 
+              class="app-header__theme-btn"
+              :class="{ active: settingsStore.theme === 'light' }"
+              @click="settingsStore.setTheme('light')"
+              title="ライトモード"
+            >
+              <i class="fa-solid fa-sun" aria-hidden="true"></i>
+            </button>
+            <button 
+              class="app-header__theme-btn"
+              :class="{ active: settingsStore.theme === 'dark' }"
+              @click="settingsStore.setTheme('dark')"
+              title="ダークモード"
+            >
+              <i class="fa-solid fa-moon" aria-hidden="true"></i>
+            </button>
+            <button 
+              class="app-header__theme-btn"
+              :class="{ active: settingsStore.theme === 'auto' }"
+              @click="settingsStore.setTheme('auto')"
+              title="システム設定に従う"
+            >
+              <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+            </button>
+          </div>
         </nav>
       </div>
     </header>
@@ -67,7 +102,7 @@
     <footer class="app-footer">
       <div class="app-footer__container">
         <p class="app-footer__text">
-          © 2026 Visual Tool - 画像編集ツール
+          © 2026 imgcrate
         </p>
         <div class="app-footer__support">
           <a href="https://x.com/tan_fantazma" target="_blank" class="app-footer__social-link" rel="noopener noreferrer">
@@ -99,9 +134,15 @@
 </template>
 
 <script setup lang="ts">
-// Ko-fi フローティングウィジェット
+import { useSettingsStore } from '~/stores/settings';
+
+const settingsStore = useSettingsStore();
+
 onMounted(() => {
-  // スクリプトが既に読み込まれていなければ追加
+  // テーマ設定を初期化
+  settingsStore.initialize();
+
+  // Ko-fi フローティングウィジェット
   if (!document.getElementById('kofi-widget-script')) {
     const script = document.createElement('script');
     script.id = 'kofi-widget-script';

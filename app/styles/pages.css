@@ -61,6 +61,20 @@
   background-clip: text;
   margin: 0;
   line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.hero__logo-icon {
+  width: 64px;
+  height: 64px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 .hero__subtitle {
@@ -576,4 +590,28 @@
   .editor__preview-section {
     min-height: 400px;
   }
+}
+
+/* ==========================================================================
+   Dark Mode Adjustments
+   ========================================================================== */
+
+[data-theme="dark"] .hero__title {
+  background: linear-gradient(135deg, #818CF8 0%, #A78BFA 50%, #C4B5FD 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+[data-theme="dark"] .hero__image svg rect {
+  fill: var(--color-surface-secondary);
+  stroke: var(--color-border);
+}
+
+[data-theme="dark"] .feature-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .cta {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
 }

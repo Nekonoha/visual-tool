@@ -2,8 +2,22 @@
   <div class="home">
     <div class="hero">
       <div class="hero__content">
-        <h1 class="hero__title">Visual Tool</h1>
-        <p class="hero__subtitle">ブラウザで完結する高機能画像編集ツール</p>
+        <h1 class="hero__title">
+          <svg class="hero__logo-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M8 20 L32 8 L56 20 L56 48 L32 56 L8 48 Z" fill="#6366F1" />
+            <path d="M8 20 L32 32 L56 20 L32 8 Z" fill="#818CF8" />
+            <path d="M32 32 L56 20 L56 48 L32 56 Z" fill="#4F46E5" />
+            <path d="M8 20 L32 32 L32 56 L8 48 Z" fill="#6366F1" />
+            <g transform="translate(18, 14)">
+              <rect x="0" y="0" width="28" height="22" rx="3" fill="#fff" />
+              <rect x="2" y="2" width="24" height="18" rx="2" fill="#E0E7FF" />
+              <path d="M2 16 L10 10 L16 14 L24 6 L26 8 L26 20 L2 20 Z" fill="#818CF8" opacity="0.6"/>
+              <circle cx="20" cy="8" r="4" fill="#FBBF24" />
+            </g>
+          </svg>
+          imgcrate
+        </h1>
+        <p class="hero__subtitle">Browser Image Editor</p>
         <p class="hero__description">
           アップロードした画像はすべてブラウザ内で処理され、サーバーに送信されることはありません。
         </p>

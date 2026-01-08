@@ -20,6 +20,8 @@ export interface ImageState {
 export interface AppliedOperation {
   type: 'resize' | 'crop' | 'transform' | 'filters' | 'watermark' | 'grayscale' | 'sepia' | 'advancedTransform';
   params: any;
+  // 変形操作の場合、適用前の元画像を保存（undoで復元するため）
+  snapshotBeforeTransform?: string;
 }
 
 export const useImageStore = defineStore('image', () => {
@@ -132,9 +134,22 @@ export const useImageStore = defineStore('image', () => {
   };
 
   // 適用済み操作を順番に適用してopsを構築
+  // 変形操作は元画像に焼き込まれるため、最後の変形操作以降の操作のみを適用
   const buildOpsFromHistory = (upToIndex: number): ReturnType<typeof defaultOps> => {
     const result = defaultOps();
+    
+    // 最後の変形操作のインデックスを見つける
+    let lastTransformIndex = -1;
     for (let i = 0; i <= upToIndex && i < appliedOps.value.length; i++) {
+      if (appliedOps.value[i]?.type === 'advancedTransform') {
+        lastTransformIndex = i;
+      }
+    }
+    
+    // 変形操作の次から適用を開始（変形操作自体は元画像に焼き込まれている）
+    const startIndex = lastTransformIndex + 1;
+    
+    for (let i = startIndex; i <= upToIndex && i < appliedOps.value.length; i++) {
       const op = appliedOps.value[i];
       if (!op) continue;
       switch (op.type) {
@@ -179,9 +194,7 @@ export const useImageStore = defineStore('image', () => {
           result.grayscale = false;
           break;
         case 'advancedTransform':
-          result.freeTransform = op.params.freeTransform ?? result.freeTransform;
-          result.skew = op.params.skew ?? result.skew;
-          result.perspective = op.params.perspective ?? result.perspective;
+          // 変形操作は元画像に焼き込まれているのでスキップ
           break;
       }
     }
@@ -499,18 +512,73 @@ export const useImageStore = defineStore('image', () => {
       appliedOps.value = appliedOps.value.slice(0, historyIndex.value + 1);
     }
     
+    // 変形操作の場合、適用前の元画像を保存（undoで復元するため）
+    if (operation.type === 'advancedTransform') {
+      operation.snapshotBeforeTransform = originalDataURL.value;
+    }
+    
     // 新しい操作を追加
     appliedOps.value.push(operation);
     historyIndex.value = appliedOps.value.length - 1;
     
-    // 履歴からレンダリング
-    await renderFromHistory();
+    // 変形操作の場合は特別処理
+    if (operation.type === 'advancedTransform') {
+      await applyTransformOperation(operation);
+    } else {
+      // 通常の操作は履歴からレンダリング
+      await renderFromHistory();
+    }
+  };
+  
+  /**
+   * 変形操作を適用する（特別処理）
+   */
+  const applyTransformOperation = async (operation: AppliedOperation) => {
+    if (!processor.value || !originalDataURL.value) return;
+    
+    try {
+      isProcessing.value = true;
+      
+      // 現在の元画像を読み込み
+      await processor.value.loadImageFromDataURL(originalDataURL.value);
+      
+      // 変形操作のみを適用
+      const transformOps = defaultOps();
+      transformOps.freeTransform = operation.params.freeTransform;
+      transformOps.interpolation = operation.params.interpolation ?? 'bilinear';
+      
+      const blob = await processor.value.applyOperations(transformOps);
+      processedDataURL.value = URL.createObjectURL(blob);
+      
+      // 結果を新しい元画像として確定
+      originalDataURL.value = processedDataURL.value;
+      await processor.value.loadImageFromDataURL(originalDataURL.value);
+      
+      // opsをリセット
+      ops.value = defaultOps();
+      
+      // imageInfoを更新
+      imageInfo.value = processor.value.getImageInfo();
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Transform failed';
+    } finally {
+      isProcessing.value = false;
+    }
   };
 
   const undo = async () => {
     try {
       if (!canUndo.value) return;
       if (!processor.value) throw new Error('Processor not initialized');
+      
+      // undoする操作を取得
+      const operationToUndo = appliedOps.value[historyIndex.value];
+      
+      // 変形操作のundoの場合、保存していた元画像を復元
+      if (operationToUndo?.type === 'advancedTransform' && operationToUndo.snapshotBeforeTransform) {
+        originalDataURL.value = operationToUndo.snapshotBeforeTransform;
+        await processor.value.loadImageFromDataURL(originalDataURL.value);
+      }
       
       historyIndex.value--;
       
@@ -531,11 +599,27 @@ export const useImageStore = defineStore('image', () => {
       
       historyIndex.value++;
       
+      // redoする操作を取得
+      const operationToRedo = appliedOps.value[historyIndex.value];
+      
+      // 変形操作のredoの場合、変形を再適用して元画像を更新
+      if (operationToRedo?.type === 'advancedTransform') {
+        // 履歴からレンダリング
+        await renderFromHistory();
+        
+        // 結果を新しい元画像として確定
+        if (processedDataURL.value) {
+          originalDataURL.value = processedDataURL.value;
+          await processor.value.loadImageFromDataURL(originalDataURL.value);
+          imageInfo.value = processor.value.getImageInfo();
+        }
+      } else {
+        // 履歴からレンダリング
+        await renderFromHistory();
+      }
+      
       // UIのopsをリセット
       ops.value = defaultOps();
-      
-      // 履歴からレンダリング
-      await renderFromHistory();
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Redo failed';
     }

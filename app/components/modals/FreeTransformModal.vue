@@ -90,9 +90,8 @@ const hintText = computed(() => modeInfo[currentMode.value]?.hint ?? '');
 
 const handleChange = (params: Corners) => {
   currentParams.value = params;
-  // ハンドル操作時にコントロール値を更新
+  // ハンドル操作時にコントロール値を更新（プレビューは適用時にのみ）
   updateControlsFromCorners();
-  emit('preview', params, interpolation.value);
 };
 
 const updateControlsFromCorners = () => {
@@ -151,7 +150,7 @@ const handleReset = () => {
   anchor.value = 'c';
   transformRef.value?.reset();
   currentParams.value = { ...defaultCorners };
-  emit('preview', currentParams.value, interpolation.value);
+  // リセット時はプレビューを送信しない（元画像のまま）
 };
 
 // 変形情報の表示用
@@ -164,8 +163,14 @@ const transformInfo = computed(() => {
 
 watch(() => props.visible, (visible) => {
   if (visible) {
+    // モーダルが開いた時はデフォルト値に初期化（画像には適用しない）
     nextTick(() => {
-      handleReset();
+      scaleX.value = 100;
+      scaleY.value = 100;
+      rotation.value = 0;
+      anchor.value = 'c';
+      currentParams.value = { ...defaultCorners };
+      // transformRefのリセットは呼ばない（ハンドルはデフォルト位置）
     });
   }
 });

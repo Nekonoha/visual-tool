@@ -47,7 +47,7 @@
 .app-header__logo {
   display: flex;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--space-8);
   text-decoration: none;
   color: var(--color-text-primary);
   font-weight: 700;
@@ -57,21 +57,24 @@
 
 .app-header__logo:hover {
   color: var(--color-primary);
-}
-
-.app-header__logo:hover .app-header__logo-icon {
-  stroke: var(--color-primary);
-  transform: scale(1.05);
-}
-
-.app-header__logo-icon {
-  transition: all var(--transition-normal) ease-out;
+  transform: translateY(-1px);
 }
 
 .app-header__logo-icon {
   width: 32px;
   height: 32px;
-  stroke-width: 2;
+  transition: transform var(--transition-normal) ease-out;
+}
+
+.app-header__logo:hover .app-header__logo-icon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.app-header__logo-text {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .app-header__nav {
@@ -107,6 +110,42 @@
 
 .app-header__nav-icon {
   font-size: 16px;
+}
+
+/* Theme Toggle */
+.app-header__theme-toggle {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: var(--space-16);
+  padding: var(--space-4);
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+}
+
+.app-header__theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease-out;
+}
+
+.app-header__theme-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-tertiary);
+}
+
+.app-header__theme-btn.active {
+  color: #FFFFFF;
+  background: var(--gradient-primary);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 /* ==========================================================================
