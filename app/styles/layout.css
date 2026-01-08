@@ -209,6 +209,30 @@
   font-size: var(--font-size-sm);
 }
 
+.app-footer__author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+}
+
+.app-footer__social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast) ease-out;
+}
+
+.app-footer__social-link:hover {
+  color: var(--color-primary);
+}
+
+.app-footer__social-link i {
+  font-size: 1.1em;
+}
+
 .app-footer__links {
   display: flex;
   gap: var(--space-24);

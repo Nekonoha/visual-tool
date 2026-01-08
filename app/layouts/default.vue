@@ -69,6 +69,12 @@
         <p class="app-footer__text">
           © 2026 Visual Tool - 画像編集ツール
         </p>
+        <div class="app-footer__author">
+          <a href="https://x.com/tan_fantazma" target="_blank" class="app-footer__social-link" rel="noopener noreferrer">
+            <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
+            @tan_fantazma
+          </a>
+        </div>
         <div class="app-footer__links">
           <NuxtLink to="/privacy" class="app-footer__link">プライバシーポリシー</NuxtLink>
           <NuxtLink to="/terms" class="app-footer__link">利用規約</NuxtLink>
