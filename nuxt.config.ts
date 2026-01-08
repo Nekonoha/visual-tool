@@ -6,6 +6,11 @@ export default defineNuxtConfig({
   // SSR無効化（SPA モード）
   ssr: false,
   
+  // GitHub Pagesなどサブパス配信時のベースURL
+  app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+  },
+
   // CSS - メインエントリーポイントのみ
   css: [
     '@fortawesome/fontawesome-free/css/all.min.css',
