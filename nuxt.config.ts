@@ -9,6 +9,16 @@ export default defineNuxtConfig({
   // GitHub Pagesなどサブパス配信時のベースURL
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    head: {
+      link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { 
+          rel: 'stylesheet', 
+          href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap' 
+        },
+      ],
+    },
   },
 
   // CSS - メインエントリーポイントのみ

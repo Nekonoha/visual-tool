@@ -186,7 +186,7 @@
     <!-- 自由変形モーダル -->
     <FreeTransformModal
       v-model:visible="showFreeTransformModal"
-      :original-src="imageStore.originalDataURL"
+      :original-src="imageStore.processedDataURL"
       :image-width="imageStore.imageInfo?.width || 0"
       :image-height="imageStore.imageInfo?.height || 0"
       :mode="currentTransformMode"
@@ -326,15 +326,6 @@ const handleBrightnessContrastPreview = async (brightness: number, contrast: num
   await imageStore.applyFiltersRealtime({
     brightness,
     contrast,
-    saturation: 100,
-    blur: 0,
-    hue: 0,
-    gamma: 1,
-    toneCurvePoints: undefined,
-    crop: null,
-    resizeWidth: null,
-    resizeHeight: null,
-    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
   });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
@@ -358,17 +349,9 @@ const handleBrightnessContrastApply = async (brightness: number, contrast: numbe
 // 色相・彩度ハンドラ
 const handleHueSaturationPreview = async (hue: number, saturation: number, gamma: number) => {
   await imageStore.applyFiltersRealtime({
-    brightness: 100,
-    contrast: 100,
     saturation,
-    blur: 0,
     hue,
     gamma: gamma / 100,
-    toneCurvePoints: undefined,
-    crop: null,
-    resizeWidth: null,
-    resizeHeight: null,
-    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
   });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
@@ -392,17 +375,7 @@ const handleHueSaturationApply = async (hue: number, saturation: number, gamma: 
 // トーンカーブハンドラ
 const handleToneCurvePreview = async (points: ToneCurvePoint[]) => {
   await imageStore.applyFiltersRealtime({
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    blur: 0,
-    hue: 0,
-    gamma: 1,
     toneCurvePoints: points,
-    crop: null,
-    resizeWidth: null,
-    resizeHeight: null,
-    watermark: { type: 'none', text: '', fontSize: 32, color: '#ffffff', opacity: 0.5, position: 'bottom-right', offsetX: 24, offsetY: 24, imageDataURL: '', scale: 0.3, mode: 'single', rotation: 0, spacingX: 100, spacingY: 100, anchorX: null, anchorY: null },
   });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
@@ -447,16 +420,6 @@ const handleToneCurveCancel = async () => {
 // ウォーターマークハンドラ
 const handleWatermarkPreview = async (params: WatermarkParams) => {
   await imageStore.applyFiltersRealtime({
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    blur: 0,
-    hue: 0,
-    gamma: 1,
-    toneCurvePoints: undefined,
-    crop: null,
-    resizeWidth: null,
-    resizeHeight: null,
     watermark: {
       ...params,
       anchorX: null,
@@ -484,8 +447,9 @@ const handleWatermarkApply = async (params: WatermarkParams) => {
 
 // 諧調化
 const handlePosterizePreview = async (levels: number) => {
-  imageStore.ops.posterize = { levels };
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    posterize: { levels },
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -500,8 +464,9 @@ const handlePosterizeApply = async (levels: number) => {
 
 // レベル補正
 const handleLevelsPreview = async (params: LevelsParams) => {
-  imageStore.ops.levels = params;
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    levels: params,
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -516,8 +481,9 @@ const handleLevelsApply = async (params: LevelsParams) => {
 
 // カラーバランス
 const handleColorBalancePreview = async (params: ColorBalanceParams) => {
-  imageStore.ops.colorBalance = params;
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    colorBalance: params,
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -532,8 +498,9 @@ const handleColorBalanceApply = async (params: ColorBalanceParams) => {
 
 // 2値化
 const handleThresholdPreview = async (threshold: number) => {
-  imageStore.ops.threshold = { threshold };
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    threshold: { threshold },
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -548,8 +515,9 @@ const handleThresholdApply = async (threshold: number) => {
 
 // シャープ
 const handleSharpenPreview = async (params: SharpenParams) => {
-  imageStore.ops.sharpen = params;
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    sharpen: params,
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -564,8 +532,9 @@ const handleSharpenApply = async (params: SharpenParams) => {
 
 // えんぴつ調
 const handleSketchPreview = async (params: SketchParams) => {
-  imageStore.ops.sketch = params;
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    sketch: params,
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -580,8 +549,9 @@ const handleSketchApply = async (params: SketchParams) => {
 
 // 色収差
 const handleChromaticAberrationPreview = async (params: ChromaticAberrationParams) => {
-  imageStore.ops.chromaticAberration = params;
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    chromaticAberration: params,
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
@@ -596,9 +566,10 @@ const handleChromaticAberrationApply = async (params: ChromaticAberrationParams)
 
 // 自由変形
 const handleFreeTransformPreview = async (params: Corners, interpolation?: InterpolationMethod) => {
-  imageStore.ops.freeTransform = params;
-  imageStore.ops.interpolation = interpolation ?? 'bilinear';
-  await imageStore.scheduleRender();
+  await imageStore.applyFiltersRealtime({
+    freeTransform: params,
+    interpolation: interpolation ?? 'bilinear',
+  });
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 

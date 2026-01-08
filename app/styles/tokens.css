@@ -11,74 +11,79 @@
    * Color Tokens
    * ======================================== */
   
-  /* Primary Colors */
-  --color-primary: #007AFF;
-  --color-primary-hover: #0056b3;
-  --color-primary-active: #004494;
-  --color-primary-light: rgba(0, 122, 255, 0.1);
+  /* Primary Colors - モダンなブルー/パープルグラデーション */
+  --color-primary: #6366F1;
+  --color-primary-hover: #4F46E5;
+  --color-primary-active: #4338CA;
+  --color-primary-light: rgba(99, 102, 241, 0.1);
   
   /* Secondary Colors */
-  --color-secondary: #5856D6;
-  --color-secondary-hover: #4442b3;
+  --color-secondary: #8B5CF6;
+  --color-secondary-hover: #7C3AED;
+  
+  /* Accent Gradient */
+  --gradient-primary: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  --gradient-accent: linear-gradient(135deg, #06B6D4 0%, #6366F1 50%, #8B5CF6 100%);
   
   /* Semantic Colors */
-  --color-success: #34C759;
-  --color-success-light: rgba(52, 199, 89, 0.1);
-  --color-warning: #FF9500;
-  --color-warning-light: rgba(255, 149, 0, 0.1);
-  --color-error: #FF3B30;
-  --color-error-light: rgba(255, 59, 48, 0.1);
-  --color-info: #5AC8FA;
-  --color-info-light: rgba(90, 200, 250, 0.1);
+  --color-success: #10B981;
+  --color-success-light: rgba(16, 185, 129, 0.1);
+  --color-warning: #F59E0B;
+  --color-warning-light: rgba(245, 158, 11, 0.1);
+  --color-error: #EF4444;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-info: #06B6D4;
+  --color-info-light: rgba(6, 182, 212, 0.1);
   
-  /* Surface Colors */
-  --color-background: #F9FAFB;
+  /* Surface Colors - よりソフトでモダン */
+  --color-background: #F8FAFC;
   --color-surface: #FFFFFF;
-  --color-surface-secondary: #F3F4F6;
-  --color-surface-tertiary: #E5E7EB;
-  --color-surface-hover: rgba(0, 0, 0, 0.04);
-  --color-surface-muted: #F3F4F6;
+  --color-surface-secondary: #F1F5F9;
+  --color-surface-tertiary: #E2E8F0;
+  --color-surface-hover: rgba(99, 102, 241, 0.04);
+  --color-surface-muted: #F1F5F9;
+  --color-surface-glass: rgba(255, 255, 255, 0.8);
   
   /* Text Colors */
-  --color-text: #111827;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-muted: #9CA3AF;
-  --color-text-disabled: #D1D5DB;
+  --color-text: #0F172A;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94A3B8;
+  --color-text-muted: #94A3B8;
+  --color-text-disabled: #CBD5E1;
   --color-text-inverse: #FFFFFF;
   
   /* Border Colors */
-  --color-border: #E5E7EB;
-  --color-border-light: #F3F4F6;
-  --color-border-strong: #D1D5DB;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+  --color-border-strong: #CBD5E1;
   --color-border-focus: var(--color-primary);
   
   /* Overlay */
-  --color-overlay: rgba(0, 0, 0, 0.5);
-  --color-overlay-light: rgba(0, 0, 0, 0.3);
+  --color-overlay: rgba(15, 23, 42, 0.6);
+  --color-overlay-light: rgba(15, 23, 42, 0.4);
   
   /* Checkerboard for transparency */
-  --checkerboard-bg: repeating-conic-gradient(#e5e7eb 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  --checkerboard-bg: repeating-conic-gradient(#e2e8f0 0% 25%, transparent 0% 50%) 50% / 16px 16px;
   
   /* ========================================
    * Typography Tokens
    * ======================================== */
   
   /* Font Family */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --font-family-base: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
   
   /* Font Sizes */
   --font-size-xs: 11px;
   --font-size-sm: 13px;
-  --font-size-md: 15px;
-  --font-size-base: 16px;
-  --font-size-lg: 17px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 28px;
-  --font-size-4xl: 34px;
+  --font-size-md: 14px;
+  --font-size-base: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 26px;
+  --font-size-4xl: 32px;
   --font-size-5xl: 40px;
   
   /* Font Weights */
@@ -89,9 +94,17 @@
   --font-weight-bold: 700;
   
   /* Line Heights */
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+  
+  /* Letter Spacing */
+  --letter-spacing-tighter: -0.04em;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-wider: 0.04em;
   
   /* ========================================
    * Spacing Tokens
@@ -131,17 +144,19 @@
   --radius-pill: 9999px;
   
   /* ========================================
-   * Shadow Tokens
+   * Shadow Tokens - よりソフトでモダン
    * ======================================== */
   --shadow-none: none;
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.3);
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.2);
+  --shadow-inner: inset 0 2px 4px 0 rgba(15, 23, 42, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
   
   /* ========================================
    * Animation Tokens

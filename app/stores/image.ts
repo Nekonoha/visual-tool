@@ -189,9 +189,11 @@ export const useImageStore = defineStore('image', () => {
   };
 
   const renderNow = async () => {
-    if (!processor.value) return;
+    if (!processor.value || !originalDataURL.value) return;
     try {
       isProcessing.value = true;
+      // 常に元画像から再レンダリング（クロップなどの履歴を正しく適用するため）
+      await processor.value.loadImageFromDataURL(originalDataURL.value);
       const blob = await processor.value.applyOperations(ops.value);
       processedDataURL.value = URL.createObjectURL(blob);
       imageInfo.value = processor.value.getImageInfo();
@@ -426,25 +428,63 @@ export const useImageStore = defineStore('image', () => {
     resizeWidth?: number | null;
     resizeHeight?: number | null;
     watermark?: typeof ops.value.watermark;
+    // 高度なフィルター
+    posterize?: { levels: number } | null;
+    levels?: { inputBlack: number; inputWhite: number; outputBlack: number; outputWhite: number; gamma: number } | null;
+    colorBalance?: {
+      shadows: { cyan: number; magenta: number; yellow: number };
+      midtones: { cyan: number; magenta: number; yellow: number };
+      highlights: { cyan: number; magenta: number; yellow: number };
+    } | null;
+    threshold?: { threshold: number } | null;
+    sharpen?: { amount: number; radius: number } | null;
+    sketch?: { intensity: number; invert: boolean } | null;
+    chromaticAberration?: { offsetX: number; offsetY: number } | null;
+    // 変形
+    freeTransform?: {
+      tl: { x: number; y: number };
+      tr: { x: number; y: number };
+      bl: { x: number; y: number };
+      br: { x: number; y: number };
+    } | null;
+    interpolation?: 'nearest' | 'bilinear' | 'average';
   }): Promise<void> => {
     if (!processor.value) {
       error.value = 'No image loaded';
       return;
     }
-    // リアルタイムプレビュー用
-    if (typeof opts.brightness === 'number') ops.value.brightness = opts.brightness;
-    if (typeof opts.contrast === 'number') ops.value.contrast = opts.contrast;
-    if (typeof opts.saturation === 'number') ops.value.saturation = opts.saturation;
-    if (typeof opts.blur === 'number') ops.value.blur = opts.blur;
-    if (typeof opts.hue === 'number') ops.value.hue = opts.hue;
-    if (typeof opts.gamma === 'number') ops.value.gamma = opts.gamma;
-    if (Array.isArray(opts.toneCurvePoints)) ops.value.toneCurvePoints = opts.toneCurvePoints;
-    if (typeof opts.grayscale === 'boolean') ops.value.grayscale = opts.grayscale;
-    if (typeof opts.sepia === 'boolean') ops.value.sepia = opts.sepia;
-    if (opts.crop !== undefined) ops.value.crop = opts.crop;
-    if (opts.resizeWidth !== undefined) ops.value.resizeWidth = opts.resizeWidth;
-    if (opts.resizeHeight !== undefined) ops.value.resizeHeight = opts.resizeHeight;
-    if (opts.watermark !== undefined) ops.value.watermark = opts.watermark;
+    // 履歴から現在の状態を構築してから、リアルタイムパラメータを適用
+    const baseOps = buildOpsFromHistory(historyIndex.value);
+    
+    // リアルタイムプレビュー用パラメータを上書き（nullは無視、実際の値のみ適用）
+    if (typeof opts.brightness === 'number') baseOps.brightness = opts.brightness;
+    if (typeof opts.contrast === 'number') baseOps.contrast = opts.contrast;
+    if (typeof opts.saturation === 'number') baseOps.saturation = opts.saturation;
+    if (typeof opts.blur === 'number') baseOps.blur = opts.blur;
+    if (typeof opts.hue === 'number') baseOps.hue = opts.hue;
+    if (typeof opts.gamma === 'number') baseOps.gamma = opts.gamma;
+    if (Array.isArray(opts.toneCurvePoints)) baseOps.toneCurvePoints = opts.toneCurvePoints;
+    if (typeof opts.grayscale === 'boolean') baseOps.grayscale = opts.grayscale;
+    if (typeof opts.sepia === 'boolean') baseOps.sepia = opts.sepia;
+    // crop/resize/watermarkは明示的に値がある場合のみ上書き（nullは履歴の値を維持）
+    if (opts.crop && typeof opts.crop === 'object') baseOps.crop = opts.crop;
+    if (typeof opts.resizeWidth === 'number') baseOps.resizeWidth = opts.resizeWidth;
+    if (typeof opts.resizeHeight === 'number') baseOps.resizeHeight = opts.resizeHeight;
+    if (opts.watermark && opts.watermark.type !== 'none') baseOps.watermark = opts.watermark;
+    // 高度なフィルター
+    if (opts.posterize && typeof opts.posterize === 'object') baseOps.posterize = opts.posterize;
+    if (opts.levels && typeof opts.levels === 'object') baseOps.levels = opts.levels;
+    if (opts.colorBalance && typeof opts.colorBalance === 'object') baseOps.colorBalance = opts.colorBalance;
+    if (opts.threshold && typeof opts.threshold === 'object') baseOps.threshold = opts.threshold;
+    if (opts.sharpen && typeof opts.sharpen === 'object') baseOps.sharpen = opts.sharpen;
+    if (opts.sketch && typeof opts.sketch === 'object') baseOps.sketch = opts.sketch;
+    if (opts.chromaticAberration && typeof opts.chromaticAberration === 'object') baseOps.chromaticAberration = opts.chromaticAberration;
+    // 変形
+    if (opts.freeTransform && typeof opts.freeTransform === 'object') baseOps.freeTransform = opts.freeTransform;
+    if (opts.interpolation) baseOps.interpolation = opts.interpolation;
+    
+    // opsを更新
+    ops.value = baseOps;
     await scheduleRender();
   };
 
