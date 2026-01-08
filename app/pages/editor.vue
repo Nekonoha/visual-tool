@@ -17,7 +17,6 @@
         @download="handleDownload"
         @open-resize="showResizeModal = true"
         @open-crop="showCropModal = true"
-        @open-transform="showTransformModal = true"
         @open-brightness-contrast="showBrightnessContrastModal = true"
         @open-hue-saturation="showHueSaturationModal = true"
         @open-tone-curve="showToneCurveModal = true"
@@ -31,6 +30,11 @@
         @open-sharpen="showSharpenModal = true"
         @open-sketch="showSketchModal = true"
         @open-chromatic-aberration="showChromaticAberrationModal = true"
+        @open-free-transform="openTransformWithMode('free')"
+        @open-scale-transform="openTransformWithMode('scale')"
+        @open-perspective-transform="openTransformWithMode('perspective')"
+        @open-skew-transform="openTransformWithMode('skew')"
+        @open-rotate-transform="openTransformWithMode('rotate')"
       />
 
       <div class="editor__container">
@@ -76,15 +80,6 @@
       :image-height="imageStore.imageInfo?.height || 0"
       :preview-src="imageStore.processedDataURL"
       @apply="handleCropApply"
-      @cancel="handleModalCancel"
-    />
-
-    <!-- 回転・反転モーダル -->
-    <TransformModal
-      v-model:visible="showTransformModal"
-      :preview-src="modalPreviewSrc"
-      @preview="handleTransformPreview"
-      @apply="handleTransformApply"
       @cancel="handleModalCancel"
     />
 
@@ -187,6 +182,19 @@
       @apply="handleChromaticAberrationApply"
       @cancel="handleModalCancel"
     />
+
+    <!-- 自由変形モーダル -->
+    <FreeTransformModal
+      v-model:visible="showFreeTransformModal"
+      :original-src="imageStore.originalDataURL"
+      :image-width="imageStore.imageInfo?.width || 0"
+      :image-height="imageStore.imageInfo?.height || 0"
+      :mode="currentTransformMode"
+      @preview="handleFreeTransformPreview"
+      @apply="handleFreeTransformApply"
+      @cancel="handleModalCancel"
+    />
+
   </div>
 </template>
 
@@ -197,7 +205,6 @@ import ImagePreview from '~/components/editor/ImagePreview.vue';
 import EditorMenuBar from '~/components/editor/EditorMenuBar.vue';
 import ResizeModal from '~/components/modals/ResizeModal.vue';
 import CropModal from '~/components/modals/CropModal.vue';
-import TransformModal from '~/components/modals/TransformModal.vue';
 import BrightnessContrastModal from '~/components/modals/BrightnessContrastModal.vue';
 import HueSaturationModal from '~/components/modals/HueSaturationModal.vue';
 import ToneCurveModal from '~/components/modals/ToneCurveModal.vue';
@@ -209,6 +216,7 @@ import ThresholdModal from '~/components/modals/ThresholdModal.vue';
 import SharpenModal from '~/components/modals/SharpenModal.vue';
 import SketchModal from '~/components/modals/SketchModal.vue';
 import ChromaticAberrationModal from '~/components/modals/ChromaticAberrationModal.vue';
+import FreeTransformModal from '~/components/modals/FreeTransformModal.vue';
 import { useImageStore } from '~/stores/image';
 import { useEditorModals } from '~/composables/useEditorModals';
 import { useKeyboardShortcuts } from '~/composables/useKeyboardShortcuts';
@@ -227,7 +235,6 @@ const imageStore = isServer
 const {
   showResizeModal,
   showCropModal,
-  showTransformModal,
   showBrightnessContrastModal,
   showHueSaturationModal,
   showToneCurveModal,
@@ -239,11 +246,20 @@ const {
   showSharpenModal,
   showSketchModal,
   showChromaticAberrationModal,
+  showFreeTransformModal,
+  currentTransformMode,
   modalPreviewSrc,
   toneCurvePoints,
   isAnyModalOpen,
   setupModalWatchers,
 } = useEditorModals();
+
+// 変形モーダルを指定モードで開く
+type TransformMode = 'free' | 'scale' | 'perspective' | 'skew' | 'rotate';
+const openTransformWithMode = (mode: TransformMode) => {
+  currentTransformMode.value = mode;
+  showFreeTransformModal.value = true;
+};
 
 // モーダル状態変更時のwatch設定
 setupModalWatchers(() => imageStore.processedDataURL);
@@ -293,23 +309,6 @@ const handleCropApply = async (crop: { x: number; y: number; width: number; heig
     params: { crop },
   });
   showCropModal.value = false;
-};
-
-// 変形ハンドラ
-const handleTransformPreview = async (rotation: number, flipH: boolean, flipV: boolean) => {
-  imageStore.ops.rotation = rotation;
-  imageStore.ops.flipH = flipH;
-  imageStore.ops.flipV = flipV;
-  await imageStore.scheduleRender();
-  modalPreviewSrc.value = imageStore.processedDataURL;
-};
-
-const handleTransformApply = async (rotation: number, flipH: boolean, flipV: boolean) => {
-  await imageStore.applyOperation({
-    type: 'transform',
-    params: { rotation, flipH, flipV },
-  });
-  showTransformModal.value = false;
 };
 
 // 明るさ・コントラストハンドラ
@@ -629,6 +628,38 @@ const handleChromaticAberrationApply = async (params: ChromaticAberrationParams)
   });
   imageStore.ops.chromaticAberration = null;
   showChromaticAberrationModal.value = false;
+};
+
+// 自由変形
+interface Corner {
+  x: number;
+  y: number;
+}
+
+interface FreeTransformParams {
+  tl: Corner;
+  tr: Corner;
+  bl: Corner;
+  br: Corner;
+}
+
+type InterpolationMethod = 'nearest' | 'bilinear' | 'average';
+
+const handleFreeTransformPreview = async (params: FreeTransformParams, interpolation?: InterpolationMethod) => {
+  imageStore.ops.freeTransform = params;
+  imageStore.ops.interpolation = interpolation ?? 'bilinear';
+  await imageStore.scheduleRender();
+  modalPreviewSrc.value = imageStore.processedDataURL;
+};
+
+const handleFreeTransformApply = async (params: FreeTransformParams, interpolation?: InterpolationMethod) => {
+  await imageStore.applyOperation({
+    type: 'advancedTransform',
+    params: { freeTransform: params, interpolation: interpolation ?? 'bilinear' },
+  });
+  imageStore.ops.freeTransform = null;
+  imageStore.ops.interpolation = 'bilinear';
+  showFreeTransformModal.value = false;
 };
 
 // グレースケール・セピア

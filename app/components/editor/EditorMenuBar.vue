@@ -12,7 +12,6 @@ const emit = defineEmits<{
   (e: 'download'): void;
   (e: 'open-resize'): void;
   (e: 'open-crop'): void;
-  (e: 'open-transform'): void;
   (e: 'open-brightness-contrast'): void;
   (e: 'open-hue-saturation'): void;
   (e: 'open-tone-curve'): void;
@@ -27,6 +26,12 @@ const emit = defineEmits<{
   (e: 'open-sharpen'): void;
   (e: 'open-sketch'): void;
   (e: 'open-chromatic-aberration'): void;
+  // Advanced transforms - 各モード別
+  (e: 'open-free-transform'): void;
+  (e: 'open-scale-transform'): void;
+  (e: 'open-perspective-transform'): void;
+  (e: 'open-skew-transform'): void;
+  (e: 'open-rotate-transform'): void;
 }>();
 
 interface MenuItem {
@@ -54,16 +59,17 @@ const menus = computed<Menu[]>(() => [
     ],
   },
   {
-    label: '画像',
+    label: '変形',
     items: [
       { label: 'リサイズ...', action: () => emit('open-resize'), disabled: !props.hasImage },
       { label: 'クロップ...', action: () => emit('open-crop'), disabled: !props.hasImage },
-    ],
-  },
-  {
-    label: '変形',
-    items: [
-      { label: '回転・反転...', action: () => emit('open-transform'), disabled: !props.hasImage },
+      { divider: true, label: '' },
+      { label: '回転...', action: () => emit('open-rotate-transform'), disabled: !props.hasImage },
+      { divider: true, label: '' },
+      { label: '自由変形...', action: () => emit('open-free-transform'), disabled: !props.hasImage },
+      { label: '拡大・縮小...', action: () => emit('open-scale-transform'), disabled: !props.hasImage },
+      { label: '遠近ゆがみ...', action: () => emit('open-perspective-transform'), disabled: !props.hasImage },
+      { label: '平行ゆがみ...', action: () => emit('open-skew-transform'), disabled: !props.hasImage },
     ],
   },
   {

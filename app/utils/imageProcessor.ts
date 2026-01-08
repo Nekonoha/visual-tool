@@ -48,7 +48,7 @@ export class ImageProcessor {
 
   constructor() {
     this.canvas = document.createElement('canvas');
-    const ctx = this.canvas.getContext('2d');
+    const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) throw new Error('Canvas context not available');
     this.ctx = ctx;
   }
@@ -593,6 +593,16 @@ export class ImageProcessor {
     sharpen?: { amount: number; radius: number } | null;
     sketch?: { intensity: number; invert: boolean } | null;
     chromaticAberration?: { offsetX: number; offsetY: number } | null;
+    // Advanced transforms
+    freeTransform?: {
+      tl: { x: number; y: number };
+      tr: { x: number; y: number };
+      bl: { x: number; y: number };
+      br: { x: number; y: number };
+    } | null;
+    interpolation?: 'nearest' | 'bilinear' | 'average';
+    skew?: { horizontal: number; vertical: number } | null;
+    perspective?: { horizontal: number; vertical: number } | null;
     watermark?: {
       type?: 'none' | 'text' | 'image';
       text?: string;
@@ -621,7 +631,7 @@ export class ImageProcessor {
 
     // クロップ適用（ベースキャンバス）
     const sourceCanvas = document.createElement('canvas');
-    const sctx = sourceCanvas.getContext('2d');
+    const sctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
     if (!sctx) throw new Error('Canvas context not available');
     const crop = ops.crop;
     const srcW = crop ? crop.width : this.originalImage.width;
@@ -652,7 +662,7 @@ export class ImageProcessor {
     const tmpCanvas = document.createElement('canvas');
     tmpCanvas.width = Math.round(rotW);
     tmpCanvas.height = Math.round(rotH);
-    const tctx = tmpCanvas.getContext('2d');
+    const tctx = tmpCanvas.getContext('2d', { willReadFrequently: true });
     if (!tctx) throw new Error('Canvas context not available');
     tctx.translate(tmpCanvas.width / 2, tmpCanvas.height / 2);
     tctx.rotate(rad);
@@ -801,6 +811,22 @@ export class ImageProcessor {
       const imgData = this.ctx.getImageData(0, 0, finalW, finalH);
       this.applyChromaticAberration(imgData.data, finalW, finalH, ops.chromaticAberration.offsetX, ops.chromaticAberration.offsetY);
       this.ctx.putImageData(imgData, 0, 0);
+    }
+
+    // 高度な変形処理
+    // せん断変形 (Skew)
+    if (ops.skew && (ops.skew.horizontal !== 0 || ops.skew.vertical !== 0)) {
+      await this.applySkewTransform(finalW, finalH, ops.skew.horizontal, ops.skew.vertical);
+    }
+
+    // 遠近変形 (Perspective)
+    if (ops.perspective && (ops.perspective.horizontal !== 0 || ops.perspective.vertical !== 0)) {
+      await this.applyPerspectiveTransform(finalW, finalH, ops.perspective.horizontal, ops.perspective.vertical);
+    }
+
+    // 自由変形 (Free Transform)
+    if (ops.freeTransform) {
+      await this.applyFreeTransform(finalW, finalH, ops.freeTransform, ops.interpolation ?? 'bilinear');
     }
 
     const watermark = ops.watermark;
@@ -1029,5 +1055,311 @@ export class ImageProcessor {
     this.currentImage = null;
     this.canvas.width = 0;
     this.canvas.height = 0;
+  }
+
+  // ============================================================
+  // Advanced Transform Methods
+  // ============================================================
+
+  /**
+   * せん断変形 (Skew)
+   * horizontal/vertical: -1 ~ 1 の範囲（-1=最大左/上、1=最大右/下）
+   */
+  private async applySkewTransform(width: number, height: number, horizontal: number, vertical: number): Promise<void> {
+    const imgData = this.ctx.getImageData(0, 0, width, height);
+    const srcData = new Uint8ClampedArray(imgData.data);
+    const data = imgData.data;
+
+    // せん断量（ピクセル単位に変換）
+    const shearX = horizontal * 0.5; // 最大で幅の50%
+    const shearY = vertical * 0.5;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        // 中心基準で変形
+        const cx = x - width / 2;
+        const cy = y - height / 2;
+        
+        // 逆変換：出力座標から入力座標を求める
+        const srcCx = cx - cy * shearX;
+        const srcCy = cy - cx * shearY;
+        
+        const srcX = srcCx + width / 2;
+        const srcY = srcCy + height / 2;
+        
+        const idx = (y * width + x) * 4;
+        
+        if (srcX >= 0 && srcX < width - 1 && srcY >= 0 && srcY < height - 1) {
+          // バイリニア補間
+          this.bilinearSample(srcData, width, height, srcX, srcY, data, idx);
+        } else {
+          data[idx] = 0;
+          data[idx + 1] = 0;
+          data[idx + 2] = 0;
+          data[idx + 3] = 0;
+        }
+      }
+    }
+    
+    this.ctx.putImageData(imgData, 0, 0);
+  }
+
+  /**
+   * 遠近変形 (Perspective)
+   * horizontal/vertical: -1 ~ 1 の範囲
+   */
+  private async applyPerspectiveTransform(width: number, height: number, horizontal: number, vertical: number): Promise<void> {
+    const imgData = this.ctx.getImageData(0, 0, width, height);
+    const srcData = new Uint8ClampedArray(imgData.data);
+    const data = imgData.data;
+
+    // 遠近法パラメータ
+    const perspX = horizontal * 0.002;
+    const perspY = vertical * 0.002;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        // 中心基準で変形
+        const cx = x - width / 2;
+        const cy = y - height / 2;
+        
+        // 遠近変換の逆変換
+        const denom = 1 + perspX * cx + perspY * cy;
+        if (Math.abs(denom) < 0.001) continue;
+        
+        const srcCx = cx / denom;
+        const srcCy = cy / denom;
+        
+        const srcX = srcCx + width / 2;
+        const srcY = srcCy + height / 2;
+        
+        const idx = (y * width + x) * 4;
+        
+        if (srcX >= 0 && srcX < width - 1 && srcY >= 0 && srcY < height - 1) {
+          this.bilinearSample(srcData, width, height, srcX, srcY, data, idx);
+        } else {
+          data[idx] = 0;
+          data[idx + 1] = 0;
+          data[idx + 2] = 0;
+          data[idx + 3] = 0;
+        }
+      }
+    }
+    
+    this.ctx.putImageData(imgData, 0, 0);
+  }
+
+  /**
+   * 自由変形 (Free Transform) - 4隅座標による四角形変形
+   * バイリニア逆変換による高品質な実装
+   */
+  private async applyFreeTransform(
+    width: number,
+    height: number,
+    params: {
+      tl: { x: number; y: number };
+      tr: { x: number; y: number };
+      bl: { x: number; y: number };
+      br: { x: number; y: number };
+    },
+    interpolation: 'nearest' | 'bilinear' | 'average' = 'bilinear'
+  ): Promise<void> {
+    const { tl, tr, bl, br } = params;
+    
+    // 正規化座標(0-1)からピクセル座標に変換
+    const p0 = { x: tl.x * width, y: tl.y * height }; // top-left
+    const p1 = { x: tr.x * width, y: tr.y * height }; // top-right
+    const p2 = { x: br.x * width, y: br.y * height }; // bottom-right
+    const p3 = { x: bl.x * width, y: bl.y * height }; // bottom-left
+    
+    // 出力サイズを計算（変形後のバウンディングボックス）
+    const minX = Math.floor(Math.min(p0.x, p1.x, p2.x, p3.x));
+    const maxX = Math.ceil(Math.max(p0.x, p1.x, p2.x, p3.x));
+    const minY = Math.floor(Math.min(p0.y, p1.y, p2.y, p3.y));
+    const maxY = Math.ceil(Math.max(p0.y, p1.y, p2.y, p3.y));
+    
+    const outWidth = Math.max(1, maxX - minX);
+    const outHeight = Math.max(1, maxY - minY);
+    
+    // 4点の相対座標（出力領域内）
+    const q0 = { x: p0.x - minX, y: p0.y - minY };
+    const q1 = { x: p1.x - minX, y: p1.y - minY };
+    const q2 = { x: p2.x - minX, y: p2.y - minY };
+    const q3 = { x: p3.x - minX, y: p3.y - minY };
+    
+    // 元画像データを取得
+    const srcData = this.ctx.getImageData(0, 0, width, height);
+    const src = srcData.data;
+    
+    // 出力キャンバス
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = outWidth;
+    tmpCanvas.height = outHeight;
+    const tmpCtx = tmpCanvas.getContext('2d', { willReadFrequently: true });
+    if (!tmpCtx) return;
+    
+    const dstData = tmpCtx.createImageData(outWidth, outHeight);
+    const dst = dstData.data;
+    
+    // 逆変換関数（Newton-Raphson法）
+    const inverseProject = (x: number, y: number): { u: number; v: number } | null => {
+      let u = 0.5, v = 0.5;
+      
+      for (let iter = 0; iter < 10; iter++) {
+        // バイリニア補間: P = (1-u)(1-v)q0 + u(1-v)q1 + uv*q2 + (1-u)v*q3
+        const px = (1 - u) * (1 - v) * q0.x + u * (1 - v) * q1.x + u * v * q2.x + (1 - u) * v * q3.x;
+        const py = (1 - u) * (1 - v) * q0.y + u * (1 - v) * q1.y + u * v * q2.y + (1 - u) * v * q3.y;
+        
+        const dx = x - px;
+        const dy = y - py;
+        
+        if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) break;
+        
+        // ヤコビアン
+        const dxdu = -(1 - v) * q0.x + (1 - v) * q1.x + v * q2.x - v * q3.x;
+        const dxdv = -(1 - u) * q0.x - u * q1.x + u * q2.x + (1 - u) * q3.x;
+        const dydu = -(1 - v) * q0.y + (1 - v) * q1.y + v * q2.y - v * q3.y;
+        const dydv = -(1 - u) * q0.y - u * q1.y + u * q2.y + (1 - u) * q3.y;
+        
+        const det = dxdu * dydv - dxdv * dydu;
+        if (Math.abs(det) < 0.0001) break;
+        
+        u += (dydv * dx - dxdv * dy) / det;
+        v += (-dydu * dx + dxdu * dy) / det;
+      }
+      
+      if (u < -0.01 || u > 1.01 || v < -0.01 || v > 1.01) return null;
+      return { u: Math.max(0, Math.min(1, u)), v: Math.max(0, Math.min(1, v)) };
+    };
+    
+    // 各出力ピクセルに対して逆変換
+    for (let outY = 0; outY < outHeight; outY++) {
+      for (let outX = 0; outX < outWidth; outX++) {
+        const uv = inverseProject(outX, outY);
+        if (!uv) continue;
+        
+        // ソース座標
+        const srcX = uv.u * (width - 1);
+        const srcY = uv.v * (height - 1);
+        
+        const dstIdx = (outY * outWidth + outX) * 4;
+        
+        if (interpolation === 'nearest') {
+          // ニアレストネイバー
+          const x0 = Math.round(srcX);
+          const y0 = Math.round(srcY);
+          const clampedX = Math.max(0, Math.min(width - 1, x0));
+          const clampedY = Math.max(0, Math.min(height - 1, y0));
+          const idx = (clampedY * width + clampedX) * 4;
+          for (let c = 0; c < 4; c++) {
+            dst[dstIdx + c] = src[idx + c] ?? 0;
+          }
+        } else if (interpolation === 'average') {
+          // 色の平均（4ピクセル平均）
+          const x0 = Math.floor(srcX);
+          const y0 = Math.floor(srcY);
+          const x1 = Math.min(x0 + 1, width - 1);
+          const y1 = Math.min(y0 + 1, height - 1);
+          const idx00 = (y0 * width + x0) * 4;
+          const idx01 = (y0 * width + x1) * 4;
+          const idx10 = (y1 * width + x0) * 4;
+          const idx11 = (y1 * width + x1) * 4;
+          for (let c = 0; c < 4; c++) {
+            const avg = ((src[idx00 + c] ?? 0) + (src[idx01 + c] ?? 0) + (src[idx10 + c] ?? 0) + (src[idx11 + c] ?? 0)) / 4;
+            dst[dstIdx + c] = Math.round(avg);
+          }
+        } else {
+          // バイリニア補間（デフォルト）
+          const x0 = Math.floor(srcX);
+          const y0 = Math.floor(srcY);
+          const x1 = Math.min(x0 + 1, width - 1);
+          const y1 = Math.min(y0 + 1, height - 1);
+          const fx = srcX - x0;
+          const fy = srcY - y0;
+          
+          const idx00 = (y0 * width + x0) * 4;
+          const idx01 = (y0 * width + x1) * 4;
+          const idx10 = (y1 * width + x0) * 4;
+          const idx11 = (y1 * width + x1) * 4;
+          
+          for (let c = 0; c < 4; c++) {
+            const v00 = src[idx00 + c] ?? 0;
+            const v01 = src[idx01 + c] ?? 0;
+            const v10 = src[idx10 + c] ?? 0;
+            const v11 = src[idx11 + c] ?? 0;
+            
+            const top = v00 * (1 - fx) + v01 * fx;
+            const bottom = v10 * (1 - fx) + v11 * fx;
+            dst[dstIdx + c] = Math.round(top * (1 - fy) + bottom * fy);
+          }
+        }
+      }
+    }
+    
+    tmpCtx.putImageData(dstData, 0, 0);
+    
+    // クリッピングパスを適用して四角形の外側を透明化
+    const clipCanvas = document.createElement('canvas');
+    clipCanvas.width = outWidth;
+    clipCanvas.height = outHeight;
+    const clipCtx = clipCanvas.getContext('2d');
+    if (!clipCtx) return;
+    
+    // クリッピングパスを設定（変形後の四角形）
+    clipCtx.beginPath();
+    clipCtx.moveTo(q0.x, q0.y);
+    clipCtx.lineTo(q1.x, q1.y);
+    clipCtx.lineTo(q2.x, q2.y);
+    clipCtx.lineTo(q3.x, q3.y);
+    clipCtx.closePath();
+    clipCtx.clip();
+    
+    // クリッピングパス内にのみ描画
+    clipCtx.drawImage(tmpCanvas, 0, 0);
+    
+    // メインキャンバスをリサイズして描画
+    this.canvas.width = outWidth;
+    this.canvas.height = outHeight;
+    this.ctx.drawImage(clipCanvas, 0, 0);
+  }
+
+  /**
+   * バイリニア補間でサンプリング
+   */
+  private bilinearSample(
+    srcData: Uint8ClampedArray,
+    width: number,
+    height: number,
+    x: number,
+    y: number,
+    dstData: Uint8ClampedArray,
+    dstIdx: number
+  ): void {
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const x1 = Math.min(width - 1, x0 + 1);
+    const y1 = Math.min(height - 1, y0 + 1);
+    
+    const fx = x - x0;
+    const fy = y - y0;
+    
+    const idx00 = (y0 * width + x0) * 4;
+    const idx10 = (y0 * width + x1) * 4;
+    const idx01 = (y1 * width + x0) * 4;
+    const idx11 = (y1 * width + x1) * 4;
+    
+    for (let c = 0; c < 4; c++) {
+      const v00 = srcData[idx00 + c] ?? 0;
+      const v10 = srcData[idx10 + c] ?? 0;
+      const v01 = srcData[idx01 + c] ?? 0;
+      const v11 = srcData[idx11 + c] ?? 0;
+      
+      const v = v00 * (1-fx) * (1-fy) +
+                v10 * fx * (1-fy) +
+                v01 * (1-fx) * fy +
+                v11 * fx * fy;
+      
+      dstData[dstIdx + c] = Math.round(v);
+    }
   }
 }

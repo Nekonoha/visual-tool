@@ -18,7 +18,7 @@ export interface ImageState {
 
 // 適用済み操作の型定義
 export interface AppliedOperation {
-  type: 'resize' | 'crop' | 'transform' | 'filters' | 'watermark' | 'grayscale' | 'sepia';
+  type: 'resize' | 'crop' | 'transform' | 'filters' | 'watermark' | 'grayscale' | 'sepia' | 'advancedTransform';
   params: any;
 }
 
@@ -71,6 +71,16 @@ export const useImageStore = defineStore('image', () => {
     sharpen: null as { amount: number; radius: number } | null,
     sketch: null as { intensity: number; invert: boolean } | null,
     chromaticAberration: null as { offsetX: number; offsetY: number } | null,
+    // Advanced transforms
+    freeTransform: null as {
+      tl: { x: number; y: number };
+      tr: { x: number; y: number };
+      bl: { x: number; y: number };
+      br: { x: number; y: number };
+    } | null,
+    interpolation: 'bilinear' as 'nearest' | 'bilinear' | 'average',
+    skew: null as { horizontal: number; vertical: number } | null,
+    perspective: null as { horizontal: number; vertical: number } | null,
     watermark: {
       type: 'none' as 'none' | 'text' | 'image',
       text: 'Sample Watermark',
@@ -167,6 +177,11 @@ export const useImageStore = defineStore('image', () => {
         case 'sepia':
           result.sepia = true;
           result.grayscale = false;
+          break;
+        case 'advancedTransform':
+          result.freeTransform = op.params.freeTransform ?? result.freeTransform;
+          result.skew = op.params.skew ?? result.skew;
+          result.perspective = op.params.perspective ?? result.perspective;
           break;
       }
     }

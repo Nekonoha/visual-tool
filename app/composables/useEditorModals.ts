@@ -10,7 +10,6 @@ export function useEditorModals() {
   // モーダル表示状態
   const showResizeModal = ref(false);
   const showCropModal = ref(false);
-  const showTransformModal = ref(false);
   const showBrightnessContrastModal = ref(false);
   const showHueSaturationModal = ref(false);
   const showToneCurveModal = ref(false);
@@ -23,6 +22,9 @@ export function useEditorModals() {
   const showSharpenModal = ref(false);
   const showSketchModal = ref(false);
   const showChromaticAberrationModal = ref(false);
+  // Advanced transforms
+  const showFreeTransformModal = ref(false);
+  const currentTransformMode = ref<'free' | 'scale' | 'perspective' | 'skew' | 'rotate'>('free');
   
   // モーダルプレビュー用
   const modalPreviewSrc = ref<string | null>(null);
@@ -43,7 +45,6 @@ export function useEditorModals() {
   const isAnyModalOpen = computed(() => 
     showResizeModal.value ||
     showCropModal.value ||
-    showTransformModal.value ||
     showBrightnessContrastModal.value ||
     showHueSaturationModal.value ||
     showToneCurveModal.value ||
@@ -54,14 +55,14 @@ export function useEditorModals() {
     showThresholdModal.value ||
     showSharpenModal.value ||
     showSketchModal.value ||
-    showChromaticAberrationModal.value
+    showChromaticAberrationModal.value ||
+    showFreeTransformModal.value
   );
   
   // 全モーダルを閉じる
   const closeAllModals = () => {
     showResizeModal.value = false;
     showCropModal.value = false;
-    showTransformModal.value = false;
     showBrightnessContrastModal.value = false;
     showHueSaturationModal.value = false;
     showToneCurveModal.value = false;
@@ -73,6 +74,7 @@ export function useEditorModals() {
     showSharpenModal.value = false;
     showSketchModal.value = false;
     showChromaticAberrationModal.value = false;
+    showFreeTransformModal.value = false;
   };
   
   // モーダル開く際の初期化
@@ -86,7 +88,6 @@ export function useEditorModals() {
     watch(
       [
         showResizeModal,
-        showTransformModal,
         showBrightnessContrastModal,
         showHueSaturationModal,
         showWatermarkModal,
@@ -99,6 +100,7 @@ export function useEditorModals() {
         showSharpenModal,
         showSketchModal,
         showChromaticAberrationModal,
+        showFreeTransformModal,
       ],
       (newVals) => {
         const anyOpen = newVals.some(v => v);
@@ -113,7 +115,6 @@ export function useEditorModals() {
     // モーダル状態
     showResizeModal,
     showCropModal,
-    showTransformModal,
     showBrightnessContrastModal,
     showHueSaturationModal,
     showToneCurveModal,
@@ -125,6 +126,8 @@ export function useEditorModals() {
     showSharpenModal,
     showSketchModal,
     showChromaticAberrationModal,
+    showFreeTransformModal,
+    currentTransformMode,
     
     // プレビュー
     modalPreviewSrc,
