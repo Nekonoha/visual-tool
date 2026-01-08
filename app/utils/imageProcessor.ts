@@ -401,7 +401,8 @@ export class ImageProcessor {
   }
 
   /**
-   * カラーバランス
+   * カラーバランス（最適化版）
+   * ルックアップテーブルを使用して高速化
    */
   private applyColorBalance(
     data: Uint8ClampedArray,
@@ -409,34 +410,57 @@ export class ImageProcessor {
     midtones: { cyan: number; magenta: number; yellow: number },
     highlights: { cyan: number; magenta: number; yellow: number }
   ): void {
-    for (let i = 0; i < data.length; i += 4) {
-      let r = data[i] ?? 0;
-      let g = data[i + 1] ?? 0;
-      let b = data[i + 2] ?? 0;
-      const luminance = (r + g + b) / 3 / 255;
+    // 事前計算: -2.55を掛けた値
+    const sCyan = shadows.cyan * -2.55;
+    const sMagenta = shadows.magenta * -2.55;
+    const sYellow = shadows.yellow * -2.55;
+    const mCyan = midtones.cyan * -2.55;
+    const mMagenta = midtones.magenta * -2.55;
+    const mYellow = midtones.yellow * -2.55;
+    const hCyan = highlights.cyan * -2.55;
+    const hMagenta = highlights.magenta * -2.55;
+    const hYellow = highlights.yellow * -2.55;
 
-      // シャドウ、ミッドトーン、ハイライトの重み
-      const shadowWeight = 1 - Math.min(1, luminance * 2);
-      const highlightWeight = Math.max(0, (luminance - 0.5) * 2);
-      const midtoneWeight = 1 - Math.abs(luminance - 0.5) * 2;
+    // 輝度ごとの重みルックアップテーブル（0-765の範囲、r+g+bの合計値）
+    // 各輝度値に対して[shadowWeight, midtoneWeight, highlightWeight]を事前計算
+    const shadowLUT = new Float32Array(766);
+    const midtoneLUT = new Float32Array(766);
+    const highlightLUT = new Float32Array(766);
+    
+    for (let sum = 0; sum <= 765; sum++) {
+      const luminance = sum / 765; // 0-1に正規化
+      // シャドウ: 暗い部分（luminance < 0.5）で強い
+      shadowLUT[sum] = luminance < 0.5 ? 1 - luminance * 2 : 0;
+      // ハイライト: 明るい部分（luminance > 0.5）で強い
+      highlightLUT[sum] = luminance > 0.5 ? (luminance - 0.5) * 2 : 0;
+      // ミッドトーン: 中間部分で強い
+      midtoneLUT[sum] = 1 - (luminance < 0.5 ? (0.5 - luminance) * 2 : (luminance - 0.5) * 2);
+    }
 
-      // 各範囲の補正を適用
-      const adjustR = 
-        shadows.cyan * shadowWeight * -2.55 +
-        midtones.cyan * midtoneWeight * -2.55 +
-        highlights.cyan * highlightWeight * -2.55;
-      const adjustG =
-        shadows.magenta * shadowWeight * -2.55 +
-        midtones.magenta * midtoneWeight * -2.55 +
-        highlights.magenta * highlightWeight * -2.55;
-      const adjustB =
-        shadows.yellow * shadowWeight * -2.55 +
-        midtones.yellow * midtoneWeight * -2.55 +
-        highlights.yellow * highlightWeight * -2.55;
+    const len = data.length;
+    for (let i = 0; i < len; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const sum = r + g + b;
 
-      data[i] = Math.max(0, Math.min(255, r + adjustR));
-      data[i + 1] = Math.max(0, Math.min(255, g + adjustG));
-      data[i + 2] = Math.max(0, Math.min(255, b + adjustB));
+      const sw = shadowLUT[sum];
+      const mw = midtoneLUT[sum];
+      const hw = highlightLUT[sum];
+
+      // 各チャンネルの調整値を計算
+      const adjustR = sCyan * sw + mCyan * mw + hCyan * hw;
+      const adjustG = sMagenta * sw + mMagenta * mw + hMagenta * hw;
+      const adjustB = sYellow * sw + mYellow * mw + hYellow * hw;
+
+      // クランプ処理（Uint8ClampedArrayが自動的に0-255にクランプするが、明示的に行う）
+      const newR = r + adjustR;
+      const newG = g + adjustG;
+      const newB = b + adjustB;
+      
+      data[i] = newR < 0 ? 0 : newR > 255 ? 255 : newR;
+      data[i + 1] = newG < 0 ? 0 : newG > 255 ? 255 : newG;
+      data[i + 2] = newB < 0 ? 0 : newB > 255 ? 255 : newB;
     }
   }
 
