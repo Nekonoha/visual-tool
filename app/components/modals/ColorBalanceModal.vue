@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import OperationModal from '~/components/modals/OperationModal.vue';
 import Slider from '~/components/ui/Slider.vue';
-
-interface ColorBalanceParams {
-  shadows: { cyan: number; magenta: number; yellow: number };
-  midtones: { cyan: number; magenta: number; yellow: number };
-  highlights: { cyan: number; magenta: number; yellow: number };
-}
+import ModalPreview from '~/components/ui/ModalPreview.vue';
+import type { ColorBalanceParams } from '~/types';
 
 const props = defineProps<{
   visible: boolean;
@@ -63,9 +59,9 @@ const emitPreview = () => {
   <OperationModal
     :visible="visible"
     title="カラーバランス"
-    width="620px"
-    min-width="580px"
-    min-height="450px"
+    width="850px"
+    min-width="700px"
+    min-height="550px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -76,8 +72,7 @@ const emitPreview = () => {
     <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
-          <div v-else class="modal-preview-placeholder">プレビュー</div>
+          <ModalPreview :src="previewSrc" />
         </div>
       </div>
       

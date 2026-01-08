@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import OperationModal from '~/components/modals/OperationModal.vue';
+import ModalPreview from '~/components/ui/ModalPreview.vue';
 import Slider from '~/components/ui/Slider.vue';
 import FileInput from '~/components/ui/FileInput.vue';
+import type { WatermarkParams, WatermarkType, WatermarkPosition, WatermarkMode } from '~/types';
 
 const props = defineProps<{
   visible: boolean;
@@ -15,29 +17,12 @@ const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
 
-interface WatermarkParams {
-  type: 'none' | 'text' | 'image';
-  text: string;
-  fontSize: number;
-  color: string;
-  opacity: number;
-  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom';
-  offsetX: number;
-  offsetY: number;
-  imageDataURL: string;
-  scale: number;
-  mode: 'single' | 'pattern';
-  rotation: number;
-  spacingX: number;
-  spacingY: number;
-}
-
-const watermarkType = ref<'none' | 'text' | 'image'>('text');
+const watermarkType = ref<WatermarkType>('text');
 const watermarkText = ref('Sample Watermark');
 const watermarkFontSize = ref(32);
 const watermarkColor = ref('#ffffff');
 const watermarkOpacity = ref(50);
-const watermarkPosition = ref<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom'>('bottom-right');
+const watermarkPosition = ref<WatermarkPosition>('bottom-right');
 const watermarkOffsetX = ref(24);
 const watermarkOffsetY = ref(24);
 const watermarkImageDataURL = ref('');
@@ -145,9 +130,9 @@ const positions = [
   <OperationModal
     :visible="visible"
     title="ウォーターマーク"
-    width="620px"
-    min-width="580px"
-    min-height="480px"
+    width="900px"
+    min-width="750px"
+    min-height="600px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -158,7 +143,7 @@ const positions = [
     <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <ModalPreview v-if="previewSrc" :src="previewSrc" />
           <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>

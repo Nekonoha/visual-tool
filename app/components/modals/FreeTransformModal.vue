@@ -2,22 +2,13 @@
 import OperationModal from '~/components/modals/OperationModal.vue';
 import InteractiveTransform from '~/components/editor/InteractiveTransform.vue';
 import Slider from '~/components/ui/Slider.vue';
-
-interface Corner {
-  x: number;
-  y: number;
-}
-
-interface Corners {
-  tl: Corner;
-  tr: Corner;
-  bl: Corner;
-  br: Corner;
-}
-
-type TransformMode = 'free' | 'scale' | 'perspective' | 'skew' | 'rotate';
-type InterpolationMethod = 'nearest' | 'bilinear' | 'average';
-type AnchorPosition = 'tl' | 't' | 'tr' | 'l' | 'c' | 'r' | 'bl' | 'b' | 'br';
+import type { 
+  Corner, 
+  Corners, 
+  TransformMode, 
+  InterpolationMethod, 
+  AnchorPosition 
+} from '~/types';
 
 const props = defineProps<{
   visible: boolean;
@@ -184,7 +175,8 @@ watch(() => props.visible, (visible) => {
   <OperationModal
     :visible="visible"
     :title="modalTitle"
-    width="900px"
+    width="950px"
+    height="700px"
     min-width="800px"
     min-height="600px"
     resizable
@@ -318,174 +310,3 @@ watch(() => props.visible, (visible) => {
   </OperationModal>
 </template>
 
-<style scoped>
-.transform-modal-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  gap: var(--space-12);
-}
-
-.transform-main-area {
-  display: flex;
-  flex: 1;
-  gap: var(--space-16);
-  min-height: 0;
-}
-
-.transform-preview-wrapper {
-  flex: 1;
-  min-height: 300px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.transform-controls {
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-16);
-  padding: var(--space-12);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  overflow-y: auto;
-}
-
-.control-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.control-label {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-
-.control-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.control-slider {
-  flex: 1;
-}
-
-.control-input {
-  width: 60px;
-  padding: var(--space-4) var(--space-8);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  text-align: center;
-}
-
-.control-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-.control-select {
-  width: 100%;
-  padding: var(--space-8);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.control-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
-
-/* アンカーグリッド */
-.anchor-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-  width: 60px;
-}
-
-.anchor-btn {
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 2px;
-  background: var(--color-surface-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all 0.15s ease;
-}
-
-.anchor-btn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-primary);
-}
-
-.anchor-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.anchor-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-text-secondary);
-}
-
-.anchor-btn.active .anchor-dot {
-  background: white;
-}
-
-.control-hint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  padding: var(--space-4);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-sm);
-  text-align: center;
-}
-
-.transform-footer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.transform-info {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-16);
-  padding: var(--space-8);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-
-.transform-hint {
-  text-align: center;
-  padding: var(--space-8);
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.transform-hint p {
-  margin: 0;
-}
-</style>

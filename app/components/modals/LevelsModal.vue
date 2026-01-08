@@ -1,14 +1,8 @@
 <script setup lang="ts">
 import OperationModal from '~/components/modals/OperationModal.vue';
 import Slider from '~/components/ui/Slider.vue';
-
-interface LevelsParams {
-  inputBlack: number;
-  inputWhite: number;
-  outputBlack: number;
-  outputWhite: number;
-  gamma: number;
-}
+import ModalPreview from '~/components/ui/ModalPreview.vue';
+import type { LevelsParams } from '~/types';
 
 const props = defineProps<{
   visible: boolean;
@@ -73,9 +67,9 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="レベル補正"
-    width="620px"
-    min-width="580px"
-    min-height="420px"
+    width="850px"
+    min-width="700px"
+    min-height="550px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -86,8 +80,7 @@ const handleReset = () => {
     <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
-          <div v-else class="modal-preview-placeholder">プレビュー</div>
+          <ModalPreview :src="previewSrc" />
         </div>
       </div>
       

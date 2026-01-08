@@ -1,12 +1,21 @@
 <template>
-  <div class="interactive-transform" ref="scrollContainerRef">
+  <div 
+    class="interactive-transform" 
+    ref="scrollContainerRef"
+    @wheel.prevent="onWheel"
+    @pointerdown="onContainerPointerDown"
+    @pointermove="onContainerPointerMove"
+    @pointerup="onContainerPointerUp"
+    @pointerleave="onContainerPointerUp"
+  >
     <div class="interactive-transform__wrapper" ref="containerRef" :style="wrapperStyle">
       <!-- 変形プレビュー用Canvas -->
       <canvas
         ref="previewCanvasRef"
         class="interactive-transform__canvas"
-        :width="canvasWidth"
-        :height="canvasHeight"
+        :width="canvasPhysicalWidth"
+        :height="canvasPhysicalHeight"
+        :style="canvasStyle"
       />
       <svg
         v-if="isReady"
@@ -103,37 +112,26 @@
         </g>
       </svg>
     </div>
+    
+    <!-- ズームコントロール -->
+    <div class="interactive-transform__controls">
+      <button class="interactive-transform__btn" @click="zoomOut" title="縮小">−</button>
+      <span class="interactive-transform__zoom-label">{{ Math.round(viewZoom * 100) }}%</span>
+      <button class="interactive-transform__btn" @click="zoomIn" title="拡大">+</button>
+      <button class="interactive-transform__btn" @click="resetView" title="フィット">⊡</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-
-interface Corner {
-  x: number;
-  y: number;
-}
-
-interface Corners {
-  tl: Corner;
-  tr: Corner;
-  bl: Corner;
-  br: Corner;
-}
-
-// 変形モード
-// free: 自由変形（各頂点を個別に動かす + 回転）
-// scale: 拡大・縮小（中心基準でスケール）
-// perspective: 遠近ゆがみ（辺を動かすと反対側の辺が逆方向に動く）
-// skew: 平行ゆがみ（辺を平行に動かす）
-// rotate: 回転専用モード
-type TransformMode = 'free' | 'scale' | 'perspective' | 'skew' | 'rotate';
-
-// 補間方法
-type InterpolationMethod = 'nearest' | 'bilinear' | 'average';
-
-// アンカー位置
-type AnchorPosition = 'tl' | 't' | 'tr' | 'l' | 'c' | 'r' | 'bl' | 'b' | 'br';
+import type { 
+  Corner, 
+  Corners, 
+  TransformMode, 
+  InterpolationMethod, 
+  AnchorPosition 
+} from '~/types';
 
 interface Props {
   src: string | null;
@@ -165,6 +163,18 @@ const displayWidth = ref(400);
 const displayHeight = ref(300);
 const padding = 80;
 const handleSize = 14;
+
+// ズーム・パン状態
+const viewZoom = ref(1);
+const viewPanX = ref(0);
+const viewPanY = ref(0);
+const isPanning = ref(false);
+const panStart = ref({ x: 0, y: 0 });
+const panStartOffset = ref({ x: 0, y: 0 });
+
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.1;
 
 // 四隅の位置（表示座標系、canvas内の座標）
 const corners = reactive<Corners>({
@@ -216,10 +226,21 @@ const dragStartCorners = reactive<Corners>({
 const canvasWidth = computed(() => displayWidth.value + padding * 2);
 const canvasHeight = computed(() => displayHeight.value + padding * 2);
 
+// 高解像度レンダリング用（デバイスピクセル比考慮）
+const dpr = computed(() => typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1);
+const canvasPhysicalWidth = computed(() => Math.round(canvasWidth.value * dpr.value));
+const canvasPhysicalHeight = computed(() => Math.round(canvasHeight.value * dpr.value));
+
+const canvasStyle = computed(() => ({
+  width: `${canvasWidth.value}px`,
+  height: `${canvasHeight.value}px`,
+}));
+
 const wrapperStyle = computed(() => ({
   width: `${canvasWidth.value}px`,
   height: `${canvasHeight.value}px`,
-  margin: '24px',
+  transform: `translate(${viewPanX.value}px, ${viewPanY.value}px) scale(${viewZoom.value})`,
+  transformOrigin: 'center center',
 }));
 
 const polygonPoints = computed(() => {
@@ -296,12 +317,29 @@ const updateDimensions = () => {
   
   if (props.imageWidth <= 0 || props.imageHeight <= 0) return;
   
+  // 画像のアスペクト比を計算
+  const aspectRatio = props.imageWidth / props.imageHeight;
+  
+  // 利用可能なスペースに収まるようにスケール
   const scaleW = availableW / props.imageWidth;
   const scaleH = availableH / props.imageHeight;
-  const scale = Math.min(scaleW, scaleH, 0.7);
+  let scale = Math.min(scaleW, scaleH, 1.0);
   
-  displayWidth.value = Math.max(200, Math.round(props.imageWidth * scale));
-  displayHeight.value = Math.max(150, Math.round(props.imageHeight * scale));
+  // 最小サイズを確保しつつアスペクト比を維持
+  let w = props.imageWidth * scale;
+  let h = props.imageHeight * scale;
+  
+  if (w < 200) {
+    w = 200;
+    h = w / aspectRatio;
+  }
+  if (h < 150) {
+    h = 150;
+    w = h * aspectRatio;
+  }
+  
+  displayWidth.value = Math.round(w);
+  displayHeight.value = Math.round(h);
 };
 
 // 4点変形プレビュー（バイリニア補間による軽量実装）
@@ -313,15 +351,20 @@ const renderPreview = () => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   
+  const currentDpr = dpr.value;
+  
   // キャンバス全体をクリア
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // DPRスケーリング適用
+  ctx.save();
+  ctx.scale(currentDpr, currentDpr);
+  
   // 背景
   ctx.fillStyle = '#2a2a2a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, canvasWidth.value, canvasHeight.value);
   
   // クリッピングパスを設定（四角形の内部のみ描画）
-  ctx.save();
   ctx.beginPath();
   ctx.moveTo(corners.tl.x, corners.tl.y);
   ctx.lineTo(corners.tr.x, corners.tr.y);
@@ -335,7 +378,10 @@ const renderPreview = () => {
   srcCanvas.width = img.width;
   srcCanvas.height = img.height;
   const srcCtx = srcCanvas.getContext('2d');
-  if (!srcCtx) return;
+  if (!srcCtx) {
+    ctx.restore();
+    return;
+  }
   srcCtx.drawImage(img, 0, 0);
   const srcData = srcCtx.getImageData(0, 0, img.width, img.height);
   const src = srcData.data;
@@ -348,7 +394,10 @@ const renderPreview = () => {
   
   const outW = maxX - minX;
   const outH = maxY - minY;
-  if (outW <= 0 || outH <= 0) return;
+  if (outW <= 0 || outH <= 0) {
+    ctx.restore();
+    return;
+  }
   
   // 出力用ImageData
   const dstData = ctx.createImageData(outW, outH);
@@ -474,7 +523,7 @@ const renderPreview = () => {
   }
   tmpCtx.putImageData(dstData, 0, 0);
   
-  // クリッピングパス内に一時キャンバスを描画（これによりクリッピングが効く）
+  // クリッピングパス内に一時キャンバスを描画
   ctx.drawImage(tmpCanvas, minX, minY);
   
   // クリッピングパスを解除
@@ -903,6 +952,61 @@ const getTransformInfo = () => {
   return { scaleX, scaleY, rotation };
 };
 
+// ズーム・パン機能
+const zoomIn = () => {
+  viewZoom.value = Math.min(MAX_ZOOM, viewZoom.value + ZOOM_STEP);
+};
+
+const zoomOut = () => {
+  viewZoom.value = Math.max(MIN_ZOOM, viewZoom.value - ZOOM_STEP);
+};
+
+const resetView = () => {
+  viewZoom.value = 1;
+  viewPanX.value = 0;
+  viewPanY.value = 0;
+};
+
+const onWheel = (e: WheelEvent) => {
+  const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+  const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, viewZoom.value + delta));
+  
+  if (newZoom !== viewZoom.value) {
+    // ズーム中心をマウス位置にする
+    if (scrollContainerRef.value) {
+      const rect = scrollContainerRef.value.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+      
+      const ratio = newZoom / viewZoom.value;
+      viewPanX.value = viewPanX.value * ratio - mouseX * (ratio - 1);
+      viewPanY.value = viewPanY.value * ratio - mouseY * (ratio - 1);
+    }
+    viewZoom.value = newZoom;
+  }
+};
+
+const onContainerPointerDown = (e: PointerEvent) => {
+  // 中ボタン、またはAlt+左クリックでパン開始
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    e.preventDefault();
+    isPanning.value = true;
+    panStart.value = { x: e.clientX, y: e.clientY };
+    panStartOffset.value = { x: viewPanX.value, y: viewPanY.value };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }
+};
+
+const onContainerPointerMove = (e: PointerEvent) => {
+  if (!isPanning.value) return;
+  viewPanX.value = panStartOffset.value.x + (e.clientX - panStart.value.x);
+  viewPanY.value = panStartOffset.value.y + (e.clientY - panStart.value.y);
+};
+
+const onContainerPointerUp = () => {
+  isPanning.value = false;
+};
+
 defineExpose({ reset, applyTransform, getTransformInfo });
 
 let resizeObserver: ResizeObserver | null = null;
@@ -932,52 +1036,3 @@ watch(() => props.src, () => {
 });
 </script>
 
-<style scoped>
-.interactive-transform {
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-muted);
-  border-radius: var(--radius-md);
-}
-
-.interactive-transform__wrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.interactive-transform__canvas {
-  display: block;
-  border-radius: var(--radius-sm);
-}
-
-.interactive-transform__overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  overflow: visible;
-}
-
-.interactive-transform__overlay > * {
-  pointer-events: auto;
-}
-
-.interactive-transform__handle {
-  transition: filter 0.1s;
-}
-
-.interactive-transform__handle:hover {
-  filter: brightness(0.9);
-  fill: #e0e0e0;
-}
-
-.cursor-nwse-resize { cursor: nwse-resize; }
-.cursor-nesw-resize { cursor: nesw-resize; }
-.cursor-ns-resize { cursor: ns-resize; }
-.cursor-ew-resize { cursor: ew-resize; }
-.cursor-crosshair { cursor: crosshair; }
-</style>

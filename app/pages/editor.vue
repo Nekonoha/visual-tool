@@ -220,7 +220,18 @@ import FreeTransformModal from '~/components/modals/FreeTransformModal.vue';
 import { useImageStore } from '~/stores/image';
 import { useEditorModals } from '~/composables/useEditorModals';
 import { useKeyboardShortcuts } from '~/composables/useKeyboardShortcuts';
-import type { ToneCurvePoint } from '~/types';
+import type { 
+  ToneCurvePoint, 
+  Corners, 
+  TransformMode, 
+  InterpolationMethod,
+  LevelsParams,
+  ColorBalanceParams,
+  SharpenParams,
+  SketchParams,
+  ChromaticAberrationParams,
+  WatermarkParams,
+} from '~/types';
 
 definePageMeta({
   layout: 'default',
@@ -255,7 +266,6 @@ const {
 } = useEditorModals();
 
 // 変形モーダルを指定モードで開く
-type TransformMode = 'free' | 'scale' | 'perspective' | 'skew' | 'rotate';
 const openTransformWithMode = (mode: TransformMode) => {
   currentTransformMode.value = mode;
   showFreeTransformModal.value = true;
@@ -435,23 +445,6 @@ const handleToneCurveCancel = async () => {
 };
 
 // ウォーターマークハンドラ
-interface WatermarkParams {
-  type: 'none' | 'text' | 'image';
-  text: string;
-  fontSize: number;
-  color: string;
-  opacity: number;
-  position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' | 'custom';
-  offsetX: number;
-  offsetY: number;
-  imageDataURL: string;
-  scale: number;
-  mode: 'single' | 'pattern';
-  rotation: number;
-  spacingX: number;
-  spacingY: number;
-}
-
 const handleWatermarkPreview = async (params: WatermarkParams) => {
   await imageStore.applyFiltersRealtime({
     brightness: 100,
@@ -506,14 +499,6 @@ const handlePosterizeApply = async (levels: number) => {
 };
 
 // レベル補正
-interface LevelsParams {
-  inputBlack: number;
-  inputWhite: number;
-  outputBlack: number;
-  outputWhite: number;
-  gamma: number;
-}
-
 const handleLevelsPreview = async (params: LevelsParams) => {
   imageStore.ops.levels = params;
   await imageStore.scheduleRender();
@@ -530,12 +515,6 @@ const handleLevelsApply = async (params: LevelsParams) => {
 };
 
 // カラーバランス
-interface ColorBalanceParams {
-  shadows: { cyan: number; magenta: number; yellow: number };
-  midtones: { cyan: number; magenta: number; yellow: number };
-  highlights: { cyan: number; magenta: number; yellow: number };
-}
-
 const handleColorBalancePreview = async (params: ColorBalanceParams) => {
   imageStore.ops.colorBalance = params;
   await imageStore.scheduleRender();
@@ -568,11 +547,6 @@ const handleThresholdApply = async (threshold: number) => {
 };
 
 // シャープ
-interface SharpenParams {
-  amount: number;
-  radius: number;
-}
-
 const handleSharpenPreview = async (params: SharpenParams) => {
   imageStore.ops.sharpen = params;
   await imageStore.scheduleRender();
@@ -589,11 +563,6 @@ const handleSharpenApply = async (params: SharpenParams) => {
 };
 
 // えんぴつ調
-interface SketchParams {
-  intensity: number;
-  invert: boolean;
-}
-
 const handleSketchPreview = async (params: SketchParams) => {
   imageStore.ops.sketch = params;
   await imageStore.scheduleRender();
@@ -610,11 +579,6 @@ const handleSketchApply = async (params: SketchParams) => {
 };
 
 // 色収差
-interface ChromaticAberrationParams {
-  offsetX: number;
-  offsetY: number;
-}
-
 const handleChromaticAberrationPreview = async (params: ChromaticAberrationParams) => {
   imageStore.ops.chromaticAberration = params;
   await imageStore.scheduleRender();
@@ -631,28 +595,14 @@ const handleChromaticAberrationApply = async (params: ChromaticAberrationParams)
 };
 
 // 自由変形
-interface Corner {
-  x: number;
-  y: number;
-}
-
-interface FreeTransformParams {
-  tl: Corner;
-  tr: Corner;
-  bl: Corner;
-  br: Corner;
-}
-
-type InterpolationMethod = 'nearest' | 'bilinear' | 'average';
-
-const handleFreeTransformPreview = async (params: FreeTransformParams, interpolation?: InterpolationMethod) => {
+const handleFreeTransformPreview = async (params: Corners, interpolation?: InterpolationMethod) => {
   imageStore.ops.freeTransform = params;
   imageStore.ops.interpolation = interpolation ?? 'bilinear';
   await imageStore.scheduleRender();
   modalPreviewSrc.value = imageStore.processedDataURL;
 };
 
-const handleFreeTransformApply = async (params: FreeTransformParams, interpolation?: InterpolationMethod) => {
+const handleFreeTransformApply = async (params: Corners, interpolation?: InterpolationMethod) => {
   await imageStore.applyOperation({
     type: 'advancedTransform',
     params: { freeTransform: params, interpolation: interpolation ?? 'bilinear' },

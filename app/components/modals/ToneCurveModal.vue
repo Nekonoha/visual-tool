@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import OperationModal from '~/components/modals/OperationModal.vue';
+import ModalPreview from '~/components/ui/ModalPreview.vue';
 import Button from '~/components/ui/Button.vue';
 
 interface Point {
@@ -237,9 +238,9 @@ const handleCancel = () => {
   <OperationModal
     :visible="visible"
     title="トーンカーブ"
-    width="620px"
-    min-width="580px"
-    min-height="380px"
+    width="900px"
+    min-width="750px"
+    min-height="550px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -251,7 +252,7 @@ const handleCancel = () => {
       <!-- プレビューエリア -->
       <div class="modal-preview-section">
         <div class="modal-preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
+          <ModalPreview v-if="previewSrc" :src="previewSrc" />
           <div v-else class="modal-preview-placeholder">プレビュー</div>
         </div>
       </div>

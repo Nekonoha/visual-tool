@@ -1,5 +1,6 @@
 /**
  * 共通型定義
+ * 全コンポーネント・サービスはこのファイルから型をインポートする
  */
 
 // ========================================
@@ -12,19 +13,30 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 // ========================================
-// Image Editor Types
+// Geometry Types
 // ========================================
 
+/** 2D座標点 */
 export interface Point {
   x: number;
   y: number;
 }
 
-export interface ToneCurvePoint {
-  x: number; // 0..1
-  y: number; // 0..1
+/** 変形用コーナー座標（正規化: 0-1） */
+export interface Corner {
+  x: number;
+  y: number;
 }
 
+/** 四隅座標（変形用） */
+export interface Corners {
+  tl: Corner;
+  tr: Corner;
+  bl: Corner;
+  br: Corner;
+}
+
+/** 矩形領域 */
 export interface CropRect {
   x: number;
   y: number;
@@ -32,14 +44,68 @@ export interface CropRect {
   height: number;
 }
 
+/** 画像サイズ */
 export interface ImageDimensions {
   width: number;
   height: number;
 }
 
+/** 画像情報 */
 export interface ImageInfo extends ImageDimensions {
   format?: string;
   fileSize?: number;
+}
+
+// ========================================
+// Transform Types
+// ========================================
+
+/** 変形モード */
+export type TransformMode = 'free' | 'scale' | 'perspective' | 'skew' | 'rotate';
+
+/** 補間方法 */
+export type InterpolationMethod = 'nearest' | 'bilinear' | 'average';
+
+/** アンカー位置（9点グリッド） */
+export type AnchorPosition = 'tl' | 't' | 'tr' | 'l' | 'c' | 'r' | 'bl' | 'b' | 'br';
+
+/** 自由変形パラメータ */
+export interface FreeTransformParams extends Corners {
+  // Cornersを継承
+}
+
+/** スキュー（平行ゆがみ）パラメータ */
+export interface SkewParams {
+  horizontal: number;
+  vertical: number;
+}
+
+/** パース（遠近ゆがみ）パラメータ */
+export interface PerspectiveParams {
+  horizontal: number;
+  vertical: number;
+}
+
+/** 基本変形パラメータ */
+export interface TransformParams {
+  rotation: number;
+  flipH: boolean;
+  flipV: boolean;
+}
+
+/** リサイズパラメータ */
+export interface ResizeParams {
+  width: number;
+  height: number;
+}
+
+// ========================================
+// Tone Curve Types
+// ========================================
+
+export interface ToneCurvePoint {
+  x: number; // 0..1
+  y: number; // 0..1
 }
 
 // ========================================
@@ -133,16 +199,9 @@ export interface ChromaticAberrationParams {
   offsetY: number; // -50 to 50 (px)
 }
 
-export interface TransformParams {
-  rotation: number;
-  flipH: boolean;
-  flipV: boolean;
-}
-
-export interface ResizeParams {
-  width: number;
-  height: number;
-}
+// ========================================
+// Operation Types
+// ========================================
 
 export type OperationType = 
   | 'resize'
@@ -151,11 +210,12 @@ export type OperationType =
   | 'filters'
   | 'watermark'
   | 'grayscale'
-  | 'sepia';
+  | 'sepia'
+  | 'advancedTransform';
 
 export interface AppliedOperation {
   type: OperationType;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
 }
 
 // ========================================

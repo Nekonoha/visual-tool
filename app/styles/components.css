@@ -414,6 +414,12 @@
   object-fit: contain;
 }
 
+.image-preview__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .image-preview__placeholder {
   display: flex;
   align-items: center;
@@ -967,6 +973,57 @@
   filter: drop-shadow(0 2px 6px rgba(0, 122, 255, 0.4));
 }
 
+/* ズームコントロール */
+.interactive-crop__controls {
+  position: absolute;
+  bottom: var(--space-12);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-8);
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-md);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.interactive-crop:hover .interactive-crop__controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.interactive-crop__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #fff;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.interactive-crop__btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.interactive-crop__zoom-label {
+  min-width: 45px;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: #fff;
+}
+
 /* BatchQueue Component */
 .batch-queue {
   display: flex;
@@ -1273,3 +1330,109 @@
     grid-template-columns: 1fr;
   }
 }
+/* ==========================================================================
+   Interactive Transform Component
+   ========================================================================== */
+
+.interactive-transform {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.interactive-transform__wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.interactive-transform__canvas {
+  display: block;
+  border-radius: var(--radius-sm);
+  /* width/heightは明示的に設定しない - Vue側で:width/:heightで制御 */
+  width: auto !important;
+  height: auto !important;
+}
+
+.interactive-transform__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.interactive-transform__overlay > * {
+  pointer-events: auto;
+}
+
+.interactive-transform__handle {
+  transition: filter 0.1s;
+}
+
+.interactive-transform__handle:hover {
+  filter: brightness(0.9);
+  fill: #e0e0e0;
+}
+
+/* ズームコントロール */
+.interactive-transform__controls {
+  position: absolute;
+  bottom: var(--space-12);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-8);
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-md);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.interactive-transform:hover .interactive-transform__controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.interactive-transform__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #fff;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.interactive-transform__btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.interactive-transform__zoom-label {
+  min-width: 45px;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: #fff;
+}
+
+/* Transform cursor utilities */
+.cursor-nwse-resize { cursor: nwse-resize; }
+.cursor-nesw-resize { cursor: nesw-resize; }
+.cursor-ns-resize { cursor: ns-resize; }
+.cursor-ew-resize { cursor: ew-resize; }
+.cursor-crosshair { cursor: crosshair; }

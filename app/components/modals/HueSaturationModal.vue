@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import OperationModal from '~/components/modals/OperationModal.vue';
 import Slider from '~/components/ui/Slider.vue';
+import ModalPreview from '~/components/ui/ModalPreview.vue';
 
 const props = defineProps<{
   visible: boolean;
@@ -66,9 +67,9 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="色相・彩度・明度"
-    width="620px"
-    min-width="580px"
-    min-height="380px"
+    width="850px"
+    min-width="700px"
+    min-height="500px"
     resizable
     show-reset
     @update:visible="emit('update:visible', $event)"
@@ -79,8 +80,7 @@ const handleReset = () => {
     <div class="modal-content">
       <div class="modal-preview-section">
         <div class="modal-preview-container">
-          <img v-if="previewSrc" :src="previewSrc" class="modal-preview-image" />
-          <div v-else class="modal-preview-placeholder">プレビュー</div>
+          <ModalPreview :src="previewSrc" />
         </div>
       </div>
       

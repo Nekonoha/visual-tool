@@ -12,6 +12,8 @@ const props = defineProps<{
   applyDisabled?: boolean;
   applyLoading?: boolean;
   resizable?: boolean;
+  /** ポップアウト時に渡すデータ（JSON.stringifyで渡される） */
+  popoutData?: Record<string, unknown>;
 }>();
 
 const emit = defineEmits<{
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   (e: 'apply'): void;
   (e: 'cancel'): void;
   (e: 'reset'): void;
+  (e: 'popout'): void;
 }>();
 
 // ドラッグ機能
@@ -34,16 +37,19 @@ let resizeStart = { x: 0, y: 0 };
 let sizeStart = { width: 0, height: 0 };
 const modalRef = ref<HTMLElement | null>(null);
 
+// ポップアウトウィンドウ
+const popoutWindow = ref<Window | null>(null);
+
 const modalStyle = computed(() => {
   const style: Record<string, string> = {
     transform: `translate(${modalPos.value.x}px, ${modalPos.value.y}px)`,
   };
   
-  // ベースサイズ
-  style.width = props.width || '500px';
-  if (props.height) style.height = props.height;
-  style.minWidth = props.minWidth || '300px';
-  style.minHeight = props.minHeight || '200px';
+  // ベースサイズ（デフォルトを大きく）
+  style.width = props.width || '720px';
+  style.height = props.height || '600px';
+  style.minWidth = props.minWidth || '500px';
+  style.minHeight = props.minHeight || '400px';
   style.maxWidth = props.maxWidth || '95vw';
   style.maxHeight = props.maxHeight || '90vh';
   
@@ -137,6 +143,168 @@ const reset = () => {
   emit('reset');
 };
 
+/**
+ * ポップアウト（別ウィンドウでプレビュー画像を表示）
+ */
+const popout = () => {
+  // ブラウザのポップアップブロッカーに注意
+  const width = 1000;
+  const height = 800;
+  const left = (window.screen.width - width) / 2;
+  const top = (window.screen.height - height) / 2;
+  
+  const features = `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no,location=no`;
+  
+  // 新しいウィンドウを開く
+  const newWindow = window.open('', `popout_${Date.now()}`, features);
+  
+  if (newWindow) {
+    popoutWindow.value = newWindow;
+    
+    // プレビュー画像のsrcを取得（CanvasまたはModalPreviewから）
+    let imageSrc = '';
+    const canvas = modalRef.value?.querySelector('canvas') as HTMLCanvasElement | null;
+    const img = modalRef.value?.querySelector('img') as HTMLImageElement | null;
+    
+    if (canvas) {
+      try {
+        imageSrc = canvas.toDataURL('image/png');
+      } catch {
+        // tainted canvasの場合
+      }
+    } else if (img) {
+      imageSrc = img.src;
+    }
+    
+    // ダークモード対応の背景色
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#1a1a2e' : '#f5f5f5';
+    const textColor = isDark ? '#e0e0e0' : '#333';
+    const borderColor = isDark ? '#333' : '#ddd';
+    
+    newWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${props.title} - プレビュー</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              background: ${bgColor};
+              color: ${textColor};
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              height: 100vh;
+              display: flex;
+              flex-direction: column;
+            }
+            .header {
+              padding: 12px 20px;
+              border-bottom: 1px solid ${borderColor};
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-shrink: 0;
+            }
+            .title { font-size: 16px; font-weight: 600; }
+            .hint { font-size: 12px; opacity: 0.7; }
+            .preview-area {
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 20px;
+              overflow: auto;
+              background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+            }
+            .preview-image {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            }
+            .no-preview {
+              padding: 40px;
+              text-align: center;
+              opacity: 0.5;
+            }
+            .controls {
+              padding: 12px 20px;
+              border-top: 1px solid ${borderColor};
+              display: flex;
+              justify-content: center;
+              gap: 12px;
+              flex-shrink: 0;
+            }
+            button {
+              padding: 8px 20px;
+              border: 1px solid ${borderColor};
+              border-radius: 6px;
+              background: transparent;
+              color: ${textColor};
+              cursor: pointer;
+              font-size: 14px;
+            }
+            button:hover { background: rgba(128,128,128,0.2); }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <span class="title">${props.title}</span>
+            <span class="hint">メインウィンドウで編集すると更新されます</span>
+          </div>
+          <div class="preview-area" id="previewArea">
+            ${imageSrc 
+              ? `<img src="${imageSrc}" class="preview-image" id="previewImage" />`
+              : '<div class="no-preview">プレビュー画像がありません</div>'
+            }
+          </div>
+          <div class="controls">
+            <button onclick="window.close()">閉じる</button>
+          </div>
+        </body>
+      </html>
+    `);
+    newWindow.document.close();
+    
+    // プレビュー更新用のメッセージリスナー
+    const updatePreview = () => {
+      if (newWindow.closed) {
+        clearInterval(updateInterval);
+        popoutWindow.value = null;
+        return;
+      }
+      
+      let newSrc = '';
+      const currentCanvas = modalRef.value?.querySelector('canvas') as HTMLCanvasElement | null;
+      const currentImg = modalRef.value?.querySelector('img') as HTMLImageElement | null;
+      
+      if (currentCanvas) {
+        try {
+          newSrc = currentCanvas.toDataURL('image/png');
+        } catch {
+          // tainted canvas
+        }
+      } else if (currentImg) {
+        newSrc = currentImg.src;
+      }
+      
+      if (newSrc) {
+        const previewImg = newWindow.document.getElementById('previewImage') as HTMLImageElement | null;
+        if (previewImg && previewImg.src !== newSrc) {
+          previewImg.src = newSrc;
+        }
+      }
+    };
+    
+    // 定期的にプレビューを更新
+    const updateInterval = setInterval(updatePreview, 500);
+    
+    emit('popout');
+  } else {
+    alert('ポップアップがブロックされました。ブラウザの設定を確認してください。');
+  }
+};
+
 // ESCキーで閉じる
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && props.visible) {
@@ -164,7 +332,20 @@ onUnmounted(() => {
       >
         <div class="modal-header" @pointerdown.prevent="onDragStart">
           <h3 class="modal-title">{{ title }}</h3>
-          <button class="modal-close" @click.stop="close">×</button>
+          <div class="modal-header-actions">
+            <button 
+              class="modal-popout" 
+              @click.stop="popout" 
+              title="別ウィンドウで開く"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button class="modal-close" @click.stop="close">×</button>
+          </div>
         </div>
         
         <div class="modal-body">

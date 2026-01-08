@@ -106,7 +106,8 @@ const handleReset = () => {
   <OperationModal
     :visible="visible"
     title="クロップ"
-    width="850px"
+    width="900px"
+    height="650px"
     min-width="650px"
     min-height="450px"
     resizable
