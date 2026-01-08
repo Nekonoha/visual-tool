@@ -10,6 +10,7 @@ const emit = defineEmits<{
   (e: 'redo'): void;
   (e: 'reset'): void;
   (e: 'download'): void;
+  (e: 'new-upload'): void;
   (e: 'open-resize'): void;
   (e: 'open-crop'): void;
   (e: 'open-brightness-contrast'): void;
@@ -50,6 +51,15 @@ interface Menu {
 
 const menus = computed<Menu[]>(() => [
   {
+    label: 'ファイル',
+    icon: 'fa-solid fa-file',
+    items: [
+      { label: '新規アップロード...', icon: 'fa-solid fa-upload', action: () => emit('new-upload') },
+      { divider: true, label: '' },
+      { label: '画像を保存...', icon: 'fa-solid fa-download', action: () => emit('download'), disabled: !props.hasImage },
+    ],
+  },
+  {
     label: '編集',
     icon: 'fa-solid fa-pen-to-square',
     items: [
@@ -57,8 +67,6 @@ const menus = computed<Menu[]>(() => [
       { label: 'やり直し (Ctrl+Y)', icon: 'fa-solid fa-rotate-right', action: () => emit('redo'), disabled: !props.canRedo },
       { divider: true, label: '' },
       { label: 'すべてリセット', icon: 'fa-solid fa-arrow-rotate-left', action: () => emit('reset'), disabled: !props.hasImage },
-      { divider: true, label: '' },
-      { label: '画像を保存...', icon: 'fa-solid fa-download', action: () => emit('download'), disabled: !props.hasImage },
     ],
   },
   {

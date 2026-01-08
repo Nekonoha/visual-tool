@@ -249,11 +249,14 @@
 
 .app-footer__container {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  gap: var(--space-16);
   padding: 0 var(--space-24);
   max-width: 1920px;
   margin: 0 auto;
+  /* サイドバー幅(240px)分だけ右にオフセットしてメインエリアの中央に */
+  padding-left: calc(240px + var(--space-24));
 }
 
 .app-footer__text {
@@ -381,30 +384,98 @@
   .app-header__nav {
     overflow-x: auto;
   }
+
+  .app-footer__container {
+    /* サイドバー非表示時はオフセット解除 */
+    padding-left: var(--space-24);
+  }
 }
 
 @media (max-width: 768px) {
   .app-header__container {
     padding: 0 var(--space-16);
-    gap: var(--space-16);
+    gap: var(--space-8);
+    flex-wrap: wrap;
   }
 
   .app-header__logo-text {
     display: none;
   }
 
+  .app-header__nav {
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
   .app-header__nav-link {
-    padding: 6px 12px;
-    font-size: var(--font-size-sm);
+    padding: 6px 10px;
+    font-size: var(--font-size-xs);
+  }
+
+  .app-header__nav-icon {
+    display: none;
+  }
+
+  .app-header__theme-toggle {
+    gap: var(--space-2);
+  }
+
+  .app-header__theme-btn {
+    width: 28px;
+    height: 28px;
+    font-size: var(--font-size-xs);
   }
 
   .app-main {
-    padding: var(--space-16);
+    padding: var(--space-12);
+  }
+
+  .app-footer {
+    padding: var(--space-16) 0;
   }
 
   .app-footer__container {
+    padding: 0 var(--space-16);
+    gap: var(--space-12);
+  }
+
+  .app-footer__support {
     flex-direction: column;
-    gap: var(--space-16);
-    text-align: center;
+    gap: var(--space-8);
+  }
+
+  .app-footer__links {
+    flex-direction: column;
+    gap: var(--space-8);
+    align-items: center;
+  }
+
+  .app-footer__social-link,
+  .app-footer__kofi-link {
+    font-size: var(--font-size-xs);
+    padding: 6px 12px;
+  }
+
+  .app-footer__link {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header__container {
+    padding: 0 var(--space-8);
+  }
+
+  .app-header__nav-link {
+    padding: 4px 8px;
+  }
+
+  .app-main {
+    padding: var(--space-8);
+  }
+
+  .app-footer__container {
+    padding: 0 var(--space-8);
   }
 }

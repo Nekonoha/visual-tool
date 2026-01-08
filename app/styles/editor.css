@@ -15,12 +15,12 @@
   height: 40px;
   align-items: stretch;
   position: relative;
-  z-index: var(--z-sticky);
+  z-index: 50;
 }
 
 .menu-item {
   position: relative;
-  z-index: var(--z-dropdown);
+  z-index: 60;
 }
 
 .menu-button {
@@ -65,7 +65,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  z-index: var(--z-modal);
+  z-index: 100;
   padding: var(--space-6) 0;
 }
 
@@ -362,4 +362,75 @@
   display: flex;
   gap: var(--space-8);
   justify-content: flex-end;
+}
+
+/* ==========================================================================
+   Editor Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .editor-menu-bar {
+    height: 36px;
+    padding: 0 var(--space-4);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .menu-button {
+    padding: 0 var(--space-10);
+    font-size: var(--font-size-xs);
+    white-space: nowrap;
+  }
+
+  .menu-button i {
+    font-size: 12px;
+  }
+
+  .menu-dropdown {
+    min-width: 180px;
+    left: 0;
+    right: auto;
+  }
+
+  .menu-dropdown-item {
+    padding: var(--space-8) var(--space-12);
+    font-size: var(--font-size-xs);
+  }
+
+  .tool-panel {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: 50vh;
+  }
+
+  .tool-panel__content {
+    padding: var(--space-12);
+  }
+
+  .tool-panel__footer {
+    padding: var(--space-10) var(--space-12);
+  }
+}
+
+@media (max-width: 480px) {
+  .editor-menu-bar {
+    height: 32px;
+  }
+
+  .menu-button {
+    padding: 0 var(--space-8);
+  }
+
+  .menu-dropdown {
+    min-width: 160px;
+  }
+
+  .menu-dropdown-item {
+    padding: var(--space-6) var(--space-10);
+  }
+
+  .tool-panel__content {
+    padding: var(--space-8);
+  }
 }

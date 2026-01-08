@@ -27,7 +27,8 @@ export interface AppliedOperation {
 export const useImageStore = defineStore('image', () => {
   // State
   const originalFile = ref<File | null>(null);
-  const originalDataURL = ref<string | null>(null);  // 最初にロードした画像（不変）
+  const initialDataURL = ref<string | null>(null);   // 最初にロードした画像（絶対に変更しない）
+  const originalDataURL = ref<string | null>(null);  // 現在の基準画像（変形後に更新される）
   const processedDataURL = ref<string | null>(null);
   const imageInfo = ref<ImageState['imageInfo']>(null);
   const isProcessing = ref(false);
@@ -283,6 +284,7 @@ export const useImageStore = defineStore('image', () => {
       });
 
       originalDataURL.value = dataURL;
+      initialDataURL.value = dataURL;  // 初期画像を保存（変形でも変更しない）
       processedDataURL.value = dataURL;
       
       // 新規ロード時は履歴をクリア
@@ -632,6 +634,7 @@ export const useImageStore = defineStore('image', () => {
 
   const reset = () => {
     originalFile.value = null;
+    initialDataURL.value = null;
     originalDataURL.value = null;
     processedDataURL.value = null;
     imageInfo.value = null;
@@ -645,13 +648,17 @@ export const useImageStore = defineStore('image', () => {
   };
 
   const resetOperations = async () => {
-    if (!processor.value || !originalDataURL.value) return;
+    if (!processor.value || !initialDataURL.value) return;
+    
+    // 履歴をクリア
     appliedOps.value = [];
     historyIndex.value = -1;
     ops.value = defaultOps();
-    // 元画像に戻す
-    await processor.value.loadImageFromDataURL(originalDataURL.value);
-    processedDataURL.value = originalDataURL.value;
+    
+    // 初期画像に戻す（変形前の元画像）
+    originalDataURL.value = initialDataURL.value;
+    await processor.value.loadImageFromDataURL(initialDataURL.value);
+    processedDataURL.value = initialDataURL.value;
     imageInfo.value = processor.value.getImageInfo();
   };
 

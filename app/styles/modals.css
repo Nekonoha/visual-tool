@@ -894,3 +894,99 @@
 .transform-hint p {
   margin: 0;
 }
+
+/* ==========================================================================
+   Modal Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .operation-modal {
+    max-width: calc(100vw - 32px) !important;
+    max-height: calc(100vh - 100px) !important;
+    margin: 16px;
+  }
+
+  .modal-header {
+    padding: var(--space-12) var(--space-16);
+  }
+
+  .modal-title {
+    font-size: var(--font-size-base);
+  }
+
+  .modal-content {
+    padding: var(--space-16);
+    gap: var(--space-16);
+  }
+
+  .modal-section {
+    gap: var(--space-10);
+  }
+
+  .modal-section-title {
+    font-size: var(--font-size-xs);
+  }
+
+  .modal-footer {
+    padding: var(--space-12) var(--space-16);
+    flex-wrap: wrap;
+  }
+
+  .modal-preview-area {
+    min-height: 150px;
+    max-height: 200px;
+  }
+
+  .slider-container {
+    gap: var(--space-6);
+  }
+
+  .slider-label {
+    font-size: var(--font-size-xs);
+  }
+
+  .slider-value {
+    min-width: 36px;
+    font-size: var(--font-size-xs);
+  }
+
+  .transform-controls {
+    flex-wrap: wrap;
+  }
+
+  .transform-info {
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .operation-modal {
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px;
+  }
+
+  .modal-header {
+    padding: var(--space-10) var(--space-12);
+  }
+
+  .modal-content {
+    padding: var(--space-12);
+  }
+
+  .modal-footer {
+    padding: var(--space-10) var(--space-12);
+    gap: var(--space-6);
+  }
+
+  .modal-footer .btn {
+    padding: 8px 16px;
+    font-size: var(--font-size-xs);
+  }
+
+  .modal-preview-area {
+    min-height: 120px;
+    max-height: 150px;
+  }
+}

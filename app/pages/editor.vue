@@ -1,5 +1,14 @@
 <template>
   <div class="page-editor">
+    <!-- 新規アップロード用の非表示ファイル入力 -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept="image/*"
+      style="display: none;"
+      @change="handleNewUploadChange"
+    />
+
     <div class="page-header">
       <h1 class="page-title">画像編集</h1>
       <p class="page-description">リサイズ、クロップ、回転、フィルターなど多彩な編集機能</p>
@@ -15,6 +24,7 @@
         @redo="handleRedo"
         @reset="handleResetOps"
         @download="handleDownload"
+        @new-upload="handleNewUpload"
         @open-resize="showResizeModal = true"
         @open-crop="showCropModal = true"
         @open-brightness-contrast="showBrightnessContrastModal = true"
@@ -277,6 +287,28 @@ setupModalWatchers(() => imageStore.processedDataURL);
 // ファイル選択
 const handleFileSelected = async (file: File) => {
   await imageStore.loadImage(file);
+};
+
+// 新規アップロード用のファイル入力要素
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+// 新規アップロード
+const handleNewUpload = () => {
+  // ファイル入力ダイアログを開く
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+    fileInputRef.value.click();
+  }
+};
+
+const handleNewUploadChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    // 現在の画像をリセットして新しい画像を読み込む
+    imageStore.reset();
+    await imageStore.loadImage(file);
+  }
 };
 
 // モーダルキャンセル時の共通処理
