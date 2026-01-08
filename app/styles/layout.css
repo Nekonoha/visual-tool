@@ -479,3 +479,66 @@
     padding: 0 var(--space-8);
   }
 }
+
+/* 超小型画面 (iPhone SE等: 375px以下) */
+@media (max-width: 375px) {
+  .app-header {
+    padding: var(--space-4) 0;
+  }
+
+  .app-header__container {
+    padding: 0 var(--space-4);
+    gap: var(--space-4);
+  }
+
+  .app-header__logo-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .app-header__nav {
+    gap: var(--space-2);
+  }
+
+  .app-header__nav-link {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .app-header__theme-toggle {
+    gap: 0;
+  }
+
+  .app-header__theme-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .app-main {
+    padding: var(--space-4);
+  }
+
+  .app-footer {
+    padding: var(--space-8) 0;
+  }
+
+  .app-footer__container {
+    padding: 0 var(--space-4);
+    gap: var(--space-8);
+  }
+
+  .app-footer__text {
+    font-size: 10px;
+  }
+
+  .app-footer__social-link,
+  .app-footer__kofi-link {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .app-footer__link {
+    font-size: 10px;
+  }
+}

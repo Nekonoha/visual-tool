@@ -703,6 +703,127 @@
   }
 }
 
+/* 超小型画面 (iPhone SE等: 375px以下) */
+@media (max-width: 375px) {
+  .page-header {
+    margin-bottom: var(--space-8);
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .page-description {
+    font-size: 12px;
+  }
+
+  .hero {
+    padding: var(--space-16) 0;
+    gap: var(--space-16);
+  }
+
+  .hero__title {
+    font-size: 22px;
+  }
+
+  .hero__subtitle {
+    font-size: 14px;
+  }
+
+  .hero__actions {
+    gap: var(--space-8);
+  }
+
+  .hero__button--primary,
+  .hero__button--secondary {
+    padding: 10px 20px;
+    font-size: 12px;
+  }
+
+  .features {
+    padding: var(--space-24) 0;
+  }
+
+  .features__title {
+    font-size: 20px;
+    margin-bottom: var(--space-16);
+  }
+
+  .features__grid {
+    gap: var(--space-8);
+  }
+
+  .feature-card {
+    padding: var(--space-12);
+  }
+
+  .feature-card__icon {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .feature-card__title {
+    font-size: 14px;
+  }
+
+  .feature-card__description {
+    font-size: 11px;
+  }
+
+  .cta {
+    padding: var(--space-24) var(--space-8);
+  }
+
+  .cta__title {
+    font-size: 18px;
+  }
+
+  .cta__description {
+    font-size: 12px;
+  }
+
+  .cta__button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .editor__preview-section {
+    min-height: 200px;
+    padding: var(--space-8);
+  }
+
+  .editor__preview-title {
+    font-size: 14px;
+  }
+
+  .editor__preview-info {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+
+  .page-editor .page-title {
+    font-size: 16px;
+  }
+
+  .convert-main,
+  .compress-main,
+  .organize-main,
+  .convert-sidebar,
+  .compress-sidebar,
+  .organize-sidebar {
+    padding: var(--space-8);
+  }
+
+  .info-box {
+    padding: var(--space-8);
+  }
+
+  .stats-card {
+    padding: var(--space-8);
+  }
+}
+
 /* ==========================================================================
    Dark Mode Adjustments
    ========================================================================== */

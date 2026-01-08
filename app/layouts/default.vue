@@ -141,25 +141,5 @@ const settingsStore = useSettingsStore();
 onMounted(() => {
   // テーマ設定を初期化
   settingsStore.initialize();
-
-  // Ko-fi フローティングウィジェット
-  if (!document.getElementById('kofi-widget-script')) {
-    const script = document.createElement('script');
-    script.id = 'kofi-widget-script';
-    script.src = 'https://storage.ko-fi.com/cdn/widget/OverlayWidget.js';
-    script.onload = () => {
-      // @ts-expect-error Ko-fi widget global
-      if (window.kofiWidgetOverlay) {
-        // @ts-expect-error Ko-fi widget global
-        window.kofiWidgetOverlay.draw('F1F51RW9YM', {
-          'type': 'floating-chat',
-          'floating-chat.donateButton.text': 'Support ☕',
-          'floating-chat.donateButton.background-color': '#6366F1',
-          'floating-chat.donateButton.text-color': '#fff'
-        });
-      }
-    };
-    document.body.appendChild(script);
-  }
 });
 </script>

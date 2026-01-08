@@ -161,8 +161,11 @@ const sourceImage = ref<HTMLImageElement | null>(null);
 // 表示サイズ
 const displayWidth = ref(400);
 const displayHeight = ref(300);
-const padding = 80;
+const dynamicPadding = ref(80);
 const handleSize = 14;
+
+// 固定のpadding値（互換性のため）
+const padding = computed(() => dynamicPadding.value);
 
 // ズーム・パン状態
 const viewZoom = ref(1);
@@ -186,10 +189,10 @@ const corners = reactive<Corners>({
 
 // 初期位置を保存
 const initCorners = () => {
-  corners.tl = { x: padding, y: padding };
-  corners.tr = { x: padding + displayWidth.value, y: padding };
-  corners.bl = { x: padding, y: padding + displayHeight.value };
-  corners.br = { x: padding + displayWidth.value, y: padding + displayHeight.value };
+  corners.tl = { x: padding.value, y: padding.value };
+  corners.tr = { x: padding.value + displayWidth.value, y: padding.value };
+  corners.bl = { x: padding.value, y: padding.value + displayHeight.value };
+  corners.br = { x: padding.value + displayWidth.value, y: padding.value + displayHeight.value };
 };
 
 // アンカー座標を計算（初期四角形での座標）
@@ -207,8 +210,8 @@ const getAnchorPosition = (): Corner => {
   };
   const { xRatio, yRatio } = anchorMap[props.anchor];
   return {
-    x: padding + displayWidth.value * xRatio,
-    y: padding + displayHeight.value * yRatio,
+    x: padding.value + displayWidth.value * xRatio,
+    y: padding.value + displayHeight.value * yRatio,
   };
 };
 
@@ -223,8 +226,8 @@ const dragStartCorners = reactive<Corners>({
   br: { x: 0, y: 0 },
 });
 
-const canvasWidth = computed(() => displayWidth.value + padding * 2);
-const canvasHeight = computed(() => displayHeight.value + padding * 2);
+const canvasWidth = computed(() => displayWidth.value + padding.value * 2);
+const canvasHeight = computed(() => displayHeight.value + padding.value * 2);
 
 // 高解像度レンダリング用（デバイスピクセル比考慮）
 const dpr = computed(() => typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1);
@@ -302,6 +305,9 @@ const loadImage = () => {
     sourceImage.value = img;
     updateDimensions();
     initCorners();
+    previousDisplayWidth = displayWidth.value;
+    previousDisplayHeight = displayHeight.value;
+    previousPadding = dynamicPadding.value;
     isReady.value = true;
     nextTick(() => renderPreview());
   };
@@ -312,8 +318,16 @@ const updateDimensions = () => {
   if (!scrollContainerRef.value) return;
   const rect = scrollContainerRef.value.getBoundingClientRect();
   
-  const availableW = rect.width - 48 - padding * 2;
-  const availableH = rect.height - 48 - padding * 2;
+  // スマホでは余白を減らす
+  const isMobile = rect.width < 480;
+  const effectivePadding = isMobile ? 40 : 80;
+  const margin = isMobile ? 16 : 48;
+  
+  // paddingを更新
+  dynamicPadding.value = effectivePadding;
+  
+  const availableW = Math.max(100, rect.width - margin - effectivePadding * 2);
+  const availableH = Math.max(80, rect.height - margin - effectivePadding * 2);
   
   if (props.imageWidth <= 0 || props.imageHeight <= 0) return;
   
@@ -325,21 +339,34 @@ const updateDimensions = () => {
   const scaleH = availableH / props.imageHeight;
   let scale = Math.min(scaleW, scaleH, 1.0);
   
-  // 最小サイズを確保しつつアスペクト比を維持
+  // 最小サイズを確保しつつアスペクト比を維持（スマホでは最小サイズを小さく）
+  const minW = isMobile ? 100 : 200;
+  const minH = isMobile ? 75 : 150;
+  
   let w = props.imageWidth * scale;
   let h = props.imageHeight * scale;
   
-  if (w < 200) {
-    w = 200;
+  if (w < minW && availableW >= minW) {
+    w = minW;
     h = w / aspectRatio;
   }
-  if (h < 150) {
-    h = 150;
+  if (h < minH && availableH >= minH) {
+    h = minH;
     w = h * aspectRatio;
   }
   
-  displayWidth.value = Math.round(w);
-  displayHeight.value = Math.round(h);
+  // 利用可能スペースを超えないように最終調整
+  if (w > availableW) {
+    w = availableW;
+    h = w / aspectRatio;
+  }
+  if (h > availableH) {
+    h = availableH;
+    w = h * aspectRatio;
+  }
+  
+  displayWidth.value = Math.round(Math.max(50, w));
+  displayHeight.value = Math.round(Math.max(40, h));
 };
 
 // 4点変形プレビュー（バイリニア補間による軽量実装）
@@ -662,8 +689,8 @@ const handleScaleMode = (handle: string, dx: number, dy: number) => {
   const anchorY = anchor.y;
   
   // 初期の四角形サイズ
-  const initTl = { x: padding, y: padding };
-  const initBr = { x: padding + displayWidth.value, y: padding + displayHeight.value };
+  const initTl = { x: padding.value, y: padding.value };
+  const initBr = { x: padding.value + displayWidth.value, y: padding.value + displayHeight.value };
   const initW = displayWidth.value;
   const initH = displayHeight.value;
   
@@ -872,8 +899,8 @@ const handleDragEnd = () => {
 
 const emitChange = () => {
   // 表示座標系から正規化座標系（0-1）に変換して出力
-  const baseX = padding;
-  const baseY = padding;
+  const baseX = padding.value;
+  const baseY = padding.value;
   const w = displayWidth.value;
   const h = displayHeight.value;
   
@@ -892,17 +919,17 @@ const reset = () => {
 
 // 外部から変形を適用するメソッド
 const applyTransform = (scaleX: number, scaleY: number, rotation: number, anchorX: number, anchorY: number) => {
-  const cx = padding + displayWidth.value * anchorX;
-  const cy = padding + displayHeight.value * anchorY;
+  const cx = padding.value + displayWidth.value * anchorX;
+  const cy = padding.value + displayHeight.value * anchorY;
   const hw = displayWidth.value / 2;
   const hh = displayHeight.value / 2;
   
   // 初期の4点（anchorを中心とした相対座標）
   const points = [
-    { x: padding - cx, y: padding - cy },           // tl
-    { x: padding + displayWidth.value - cx, y: padding - cy },  // tr
-    { x: padding - cx, y: padding + displayHeight.value - cy }, // bl
-    { x: padding + displayWidth.value - cx, y: padding + displayHeight.value - cy }, // br
+    { x: padding.value - cx, y: padding.value - cy },           // tl
+    { x: padding.value + displayWidth.value - cx, y: padding.value - cy },  // tr
+    { x: padding.value - cx, y: padding.value + displayHeight.value - cy }, // bl
+    { x: padding.value + displayWidth.value - cx, y: padding.value + displayHeight.value - cy }, // br
   ];
   
   const rad = rotation * Math.PI / 180;
@@ -926,8 +953,8 @@ const applyTransform = (scaleX: number, scaleY: number, rotation: number, anchor
 
 // 現在の変形情報を取得
 const getTransformInfo = () => {
-  const baseX = padding;
-  const baseY = padding;
+  const baseX = padding.value;
+  const baseY = padding.value;
   const w = displayWidth.value;
   const h = displayHeight.value;
   
@@ -1010,12 +1037,57 @@ const onContainerPointerUp = () => {
 defineExpose({ reset, applyTransform, getTransformInfo });
 
 let resizeObserver: ResizeObserver | null = null;
+let previousDisplayWidth = 0;
+let previousDisplayHeight = 0;
+let previousPadding = 80;
+
+const rescaleCorners = (oldW: number, oldH: number, newW: number, newH: number, oldPad: number, newPad: number) => {
+  // 以前のサイズがない場合は初期化
+  if (oldW <= 0 || oldH <= 0) {
+    initCorners();
+    return;
+  }
+  
+  // コーナー位置をスケーリング
+  const scaleX = newW / oldW;
+  const scaleY = newH / oldH;
+  
+  // 古いpaddingからの相対位置を計算して新しいpadding+スケーリング
+  const rescalePoint = (p: Corner): Corner => {
+    const relX = p.x - oldPad;
+    const relY = p.y - oldPad;
+    return {
+      x: newPad + relX * scaleX,
+      y: newPad + relY * scaleY,
+    };
+  };
+  
+  corners.tl = rescalePoint(corners.tl);
+  corners.tr = rescalePoint(corners.tr);
+  corners.bl = rescalePoint(corners.bl);
+  corners.br = rescalePoint(corners.br);
+};
 
 onMounted(() => {
   if (scrollContainerRef.value) {
     resizeObserver = new ResizeObserver(() => {
+      const oldW = previousDisplayWidth;
+      const oldH = previousDisplayHeight;
+      const oldPad = previousPadding;
       updateDimensions();
-      initCorners();
+      const newW = displayWidth.value;
+      const newH = displayHeight.value;
+      const newPad = dynamicPadding.value;
+      
+      if (oldW > 0 && oldH > 0 && (oldW !== newW || oldH !== newH || oldPad !== newPad)) {
+        rescaleCorners(oldW, oldH, newW, newH, oldPad, newPad);
+      } else if (oldW <= 0 || oldH <= 0) {
+        initCorners();
+      }
+      
+      previousDisplayWidth = newW;
+      previousDisplayHeight = newH;
+      previousPadding = newPad;
       renderPreview();
     });
     resizeObserver.observe(scrollContainerRef.value);

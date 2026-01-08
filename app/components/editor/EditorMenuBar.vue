@@ -163,9 +163,9 @@ const handleOutsideClick = (e: MouseEvent) => {
       class="menu-item"
       :class="{ active: activeMenu === menu.label }"
     >
-      <button class="menu-button" @click.stop="toggleMenu(menu.label)">
+      <button class="menu-button" :title="menu.label" @click.stop="toggleMenu(menu.label)">
         <i v-if="menu.icon" :class="menu.icon" aria-hidden="true"></i>
-        {{ menu.label }}
+        <span class="menu-button__label">{{ menu.label }}</span>
       </button>
       <div v-if="activeMenu === menu.label" class="menu-dropdown">
         <template v-for="(item, index) in menu.items" :key="index">

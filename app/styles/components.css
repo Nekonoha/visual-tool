@@ -1357,9 +1357,7 @@
 .interactive-transform__canvas {
   display: block;
   border-radius: var(--radius-sm);
-  /* width/heightは明示的に設定しない - Vue側で:width/:heightで制御 */
-  width: auto !important;
-  height: auto !important;
+  /* width/heightはVue側の:styleで制御（DPR対応のためphysical sizeとdisplay sizeが異なる） */
 }
 
 .interactive-transform__overlay {
@@ -1476,6 +1474,49 @@
     padding: 10px 20px;
   }
 
+  /* スライダーコンポーネント */
+  .slider {
+    gap: 8px;
+  }
+
+  .slider__header {
+    gap: 4px;
+  }
+
+  .slider__label {
+    font-size: 11px;
+  }
+
+  .slider__value {
+    font-size: 11px;
+    min-width: 40px;
+  }
+
+  .slider__number {
+    width: 50px;
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .slider__step {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+
+  .slider__controls {
+    gap: 4px;
+  }
+
+  .slider__track {
+    height: 28px;
+  }
+
+  .slider__input::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+  }
+
   .interactive-transform__controls {
     gap: var(--space-2);
     padding: var(--space-2) var(--space-6);
@@ -1504,5 +1545,61 @@
 
   .batch-queue__item-info {
     width: 100%;
+  }
+}
+
+/* 超小型画面 (iPhone SE等: 375px以下) */
+@media (max-width: 375px) {
+  .slider {
+    gap: 6px;
+  }
+
+  .slider__label {
+    font-size: 10px;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+
+  .slider__value {
+    font-size: 10px;
+    min-width: 32px;
+  }
+
+  .slider__number {
+    width: 44px;
+    padding: 3px 4px;
+    font-size: 10px;
+  }
+
+  .slider__step {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+
+  .slider__track {
+    height: 24px;
+  }
+
+  .file-input__wrapper {
+    padding: 24px 12px;
+  }
+
+  .file-input__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .file-input__title {
+    font-size: 14px;
+  }
+
+  .file-input__description {
+    font-size: 10px;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: var(--font-size-xs);
   }
 }

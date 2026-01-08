@@ -372,29 +372,44 @@
   .editor-menu-bar {
     height: 36px;
     padding: 0 var(--space-4);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .menu-item {
+    position: static;
   }
 
   .menu-button {
-    padding: 0 var(--space-10);
-    font-size: var(--font-size-xs);
+    padding: 0 var(--space-12);
+    font-size: var(--font-size-sm);
     white-space: nowrap;
   }
 
+  /* スマホではアイコンのみ表示 */
+  .menu-button__label {
+    display: none;
+  }
+
   .menu-button i {
-    font-size: 12px;
+    font-size: 16px;
   }
 
   .menu-dropdown {
-    min-width: 180px;
-    left: 0;
+    position: fixed;
+    top: auto;
+    left: 50%;
     right: auto;
+    transform: translateX(-50%);
+    min-width: min(280px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 
   .menu-dropdown-item {
-    padding: var(--space-8) var(--space-12);
-    font-size: var(--font-size-xs);
+    padding: var(--space-10) var(--space-16);
+    font-size: var(--font-size-sm);
   }
 
   .tool-panel {
@@ -423,14 +438,58 @@
   }
 
   .menu-dropdown {
-    min-width: 160px;
+    min-width: min(260px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
   }
 
   .menu-dropdown-item {
-    padding: var(--space-6) var(--space-10);
+    padding: var(--space-8) var(--space-12);
   }
 
   .tool-panel__content {
     padding: var(--space-8);
+  }
+}
+
+/* 超小型画面 (iPhone SE等: 375px以下) */
+@media (max-width: 375px) {
+  .editor-menu-bar {
+    height: 28px;
+    padding: 0 var(--space-2);
+    gap: 0;
+  }
+
+  .menu-button {
+    padding: 0 var(--space-6);
+  }
+
+  .menu-button i {
+    font-size: 14px;
+  }
+
+  .menu-dropdown {
+    min-width: calc(100vw - 8px);
+    max-width: calc(100vw - 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    max-height: calc(100vh - 100px);
+  }
+
+  .menu-dropdown-item {
+    padding: var(--space-6) var(--space-10);
+    font-size: 12px;
+  }
+
+  .menu-dropdown-item__icon {
+    width: 16px;
+    font-size: 12px;
+  }
+
+  .tool-panel__content {
+    padding: var(--space-4);
+  }
+
+  .tool-panel__footer {
+    padding: var(--space-6) var(--space-8);
   }
 }

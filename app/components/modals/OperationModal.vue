@@ -40,25 +40,63 @@ const modalRef = ref<HTMLElement | null>(null);
 // ポップアウトウィンドウ
 const popoutWindow = ref<Window | null>(null);
 
+// スマホ判定
+const isMobile = ref(false);
+const isSmallScreen = ref(false);
+
+const updateScreenSize = () => {
+  isMobile.value = window.innerWidth < 768;
+  isSmallScreen.value = window.innerWidth < 480;
+};
+
+onMounted(() => {
+  updateScreenSize();
+  window.addEventListener('resize', updateScreenSize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateScreenSize);
+});
+
 const modalStyle = computed(() => {
-  const style: Record<string, string> = {
-    transform: `translate(${modalPos.value.x}px, ${modalPos.value.y}px)`,
-  };
+  const style: Record<string, string> = {};
   
-  // ベースサイズ（デフォルトを大きく）
-  style.width = props.width || '720px';
-  style.height = props.height || '600px';
-  style.minWidth = props.minWidth || '500px';
-  style.minHeight = props.minHeight || '400px';
-  style.maxWidth = props.maxWidth || '95vw';
-  style.maxHeight = props.maxHeight || '90vh';
-  
-  // リサイズ中はサイズを上書き
-  if (modalSize.value.width > 0) {
-    style.width = `${modalSize.value.width}px`;
+  // スマホではドラッグ無効化、位置固定
+  if (!isMobile.value) {
+    style.transform = `translate(${modalPos.value.x}px, ${modalPos.value.y}px)`;
   }
-  if (modalSize.value.height > 0) {
-    style.height = `${modalSize.value.height}px`;
+  
+  // スマホ・小型画面では固定サイズを無視して画面に合わせる
+  if (isSmallScreen.value) {
+    style.width = 'calc(100vw - 8px)';
+    style.height = 'calc(100vh - 50px)';
+    style.minWidth = '0';
+    style.minHeight = '0';
+    style.maxWidth = '100vw';
+    style.maxHeight = 'calc(100vh - 40px)';
+  } else if (isMobile.value) {
+    style.width = 'calc(100vw - 32px)';
+    style.height = 'calc(100vh - 80px)';
+    style.minWidth = '0';
+    style.minHeight = '0';
+    style.maxWidth = 'calc(100vw - 16px)';
+    style.maxHeight = 'calc(100vh - 60px)';
+  } else {
+    // PC: propsの値を使用
+    style.width = props.width || 'min(720px, calc(100vw - 16px))';
+    style.height = props.height || 'min(600px, calc(100vh - 60px))';
+    style.minWidth = props.minWidth || '0';
+    style.minHeight = props.minHeight || '0';
+    style.maxWidth = props.maxWidth || 'calc(100vw - 8px)';
+    style.maxHeight = props.maxHeight || 'calc(100vh - 50px)';
+    
+    // リサイズ中はサイズを上書き（PCのみ）
+    if (modalSize.value.width > 0) {
+      style.width = `${modalSize.value.width}px`;
+    }
+    if (modalSize.value.height > 0) {
+      style.height = `${modalSize.value.height}px`;
+    }
   }
   
   return style;
